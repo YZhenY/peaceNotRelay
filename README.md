@@ -1,6 +1,7 @@
 # peaceNotRelay
 
-This is a bridge establishing interoperability between Ethereum and Ethereum Classic in a trustless, low-cost way, without the need for a relay to copy block headers from one chain to the other. The bridge architecture consists of five main components, which are simply symmetrically replicated to get a two-way bridge.
+This is a bridge establishing interoperability between Ethereum and Ethereum Classic in a trustless, low-cost way. Instead of relaying block headers from one chain to the other, it uses a trustless Custodian who verifies transactions across the two chains.  The bridge architecture consists of five main components, which are simply symmetrically replicated to get a two-way bridge.
+
 1. `DepositContract`. This is a smart contract deployed on the home chain by the `Custodian`. This contract serves the following purposes:
     - locking in deposits in home currency from users who wish to get equivalent tokens on the foreign chain;
     - locking in the `Custodian`'s stake in home currency, and slashing it when the `Custodian` is proven to have misbehaved; and
@@ -13,6 +14,9 @@ This is a bridge establishing interoperability between Ethereum and Ethereum Cla
     - report over-staking or under-staking by the `Custodian` to the Contract on the appropriate chain; or 
     - report false `mint` requests submitted to `TokenContract` (on the foreign chain) to `DepositContract`, which can itself verify the report against local transactions on the home chain.
 5. `User`. The `User` deposits currency on the home chain in exchange for equivalent tokens on the foreign chain. They can trade or transfer the tokens just like any other token on the foreign chain. Anyone who owns these tokens can burn them on the `TokenContract` to withdraw the original deposit on the home chain.
+
+## Minting and burning
+![minting](images/minting.png)
 
 
 Collaborators:
