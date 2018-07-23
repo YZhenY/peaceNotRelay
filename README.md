@@ -4,7 +4,7 @@ This is a bridge establishing interoperability between Ethereum and Ethereum Cla
 1. `DepositContract`. This is a smart contract deployed on the home chain by the `Custodian`. This contract serves the following purposes:
     - locking in deposits in home currency from users who wish to get equivalent tokens on the foreign chain;
     - locking in the `Custodian`'s stake in home currency, and slashing it when the `Custodian` is proven to have misbehaved; and
-    - allowing `withdraw`s of home currency to anyone who burned equivalent tokens on the foreign chain.
+    - allowing withdraws of home currency to anyone who burned equivalent tokens on the foreign chain.
 2. `TokenContract`. This is a smart contract deployed on the foreign chain by the `Custodian`. This contract serves the following purposes:
     - minting equivalent tokens on the foreign chain to match deposits on the home chain; and
     - burning equivalent tokens on the foreign chain to allow for withdraws on the home chain.
