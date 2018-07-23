@@ -1,6 +1,6 @@
 # peaceNotRelay
 
-This is a bridge establishing interoperability between Ethereum and Ethereum Classic in a trustless, low-cost way. The one-way bridge architecture consists of five main components, which are simply symmetrically replicated to get a two-way bridge.
+This is a bridge establishing interoperability between Ethereum and Ethereum Classic in a trustless, low-cost way, without the need for a relay to copy block headers from one chain to the other. The one-way bridge architecture consists of five main components, which are simply symmetrically replicated to get a two-way bridge.
 1. `DepositContract`. This is a smart contract deployed on the home chain by the `Custodian`. This contract serves the following purposes:
     - locking in deposits in home currency from users who wish to get equivalent tokens on the foreign chain;
     - locking in the `Custodian`'s stake in home currency, and slashing it when the `Custodian` is proven to have misbehaved; and
