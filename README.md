@@ -2,7 +2,7 @@
 
 This is a bridge establishing interoperability between Ethereum and Ethereum Classic in a trustless, low-cost way. The one-way bridge architecture consists of five main components, which are simply symmetrically replicated to get a two-way bridge.
 1. `DepositContract`. This is a smart contract deployed on the home chain by the `Custodian`. This contract serves the following purposes:
-    - locking in `deposit`s in home currency from users who wish to get equivalent tokens on the foreign chain;
+    - locking in deposits in home currency from users who wish to get equivalent tokens on the foreign chain;
     - locking in the `Custodian`'s stake in home currency, and slashing it when the `Custodian` is proven to have misbehaved; and
     - allowing `withdraw`s of home currency to anyone who burned equivalent tokens on the foreign chain.
 2. `TokenContract`. This is a smart contract deployed on the foreign chain by the `Custodian`. This contract serves the following purposes:
