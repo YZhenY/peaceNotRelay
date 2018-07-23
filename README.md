@@ -15,7 +15,8 @@ This is a bridge establishing interoperability between Ethereum and Ethereum Cla
     - report false `mint` requests submitted to `TokenContract` (on the foreign chain) to `DepositContract`, which can itself verify the report against local transactions on the home chain.
 5. `User`. The `User` deposits currency on the home chain in exchange for equivalent tokens on the foreign chain. They can trade or transfer the tokens just like any other token on the foreign chain. Anyone who owns these tokens can burn them on the `TokenContract` to withdraw the original deposit on the home chain.
 
-## Minting and burning
+## Description
+### Minting and burning
 ![minting](images/minting.png)
 1. `Alice` deposits `X` ETC to `DepositContract` on Ethereum Classic, meant for her address `Y` on Ethereum. This transaction is processed in block `Z`.
 2. `Custodian` acknowledges `Alice`'s deposit by signing a message `m` with their signature `s`. `m` should contain information about `X`, `Y`, and `Z`.
@@ -26,8 +27,7 @@ A symmetric process applies for burning newly minted tokens to retrieve the orig
 
 This bridge typically has low gas costs per exchange, only requiring Alice to do a `deposit()` on one chain and the `Custodian` to submit a transaction running the `mint()` function on `TokenContract` (or, in the symmetric case, a `burn()` on one chain and `withdraw()` on the `DepositContract`).
 
-## Custodians and monitors
-
+### Custodians and monitors
 A Custodian is rewarded for carrying out their duty in the form of transaction fees for every deposit. Custodians are incentivised to be honest using a system of monitors and staking. 
 
 The Custodian is required to commit stakes of:
@@ -40,8 +40,7 @@ Monitors stand to gain at least 0.5α of the custodian's stake if they detect an
 - instances of under-staking on the home chain or over-staking on the foreign chain; and
 - instances where the Custodian submits a signed message to `TokenContract` containing a transaction not made in `DepositContract`.
 
-## Challenge mechanisms
-
+### Challenge mechanisms
 In the case where the Custodian fails to mint her promised tokens, Alice can issue a challenge by requesting that the Custodian send the signed message to her:
 
 ![challenge](images/challenge.png)
@@ -53,8 +52,7 @@ In the case where the Custodian fails to mint her promised tokens, Alice can iss
 
 In the symmetric case where Alice burns her foreign tokens, but the Custodian refuses to sign the burn message, Alice can issue a challenge to `TokenContract` requesting that the Custodian send the signed message to her. If the Custodian fails to send the message, Alice simply withdraws an equivalent amount of from the Custodian's stake in `TokenContract`. Recall that since the `TokenContract` has a cap equivalent to the Custodian's foreign stake, Alice will always be able to recover an amount equivalent to her burnt tokens from the Custodian's stake.
 
-## Custodian incentive structures
-
+### Custodian incentive structures
 Below we describe two main vectors of attack as well as how the Custodian's incentive structure handles these vectors:
 
 1. *Minting out of thin air*
@@ -75,15 +73,16 @@ To prevent this, the monitors should:
 
 These stakes would have been signed by the custodian, so would not be possible for the monitor to fake. Once under-staking or over-staking is detected, the custodian loses the stake in the contract on which the report is made.
 
-## Ending Considerations
+### Ending Considerations
 - Since the stakes are in ETC and ETH, their ratio would be dependent on the exchange rate. Hence, price volatility of this exchange rate would have to be taken into account when determining if home chain is under-staked / foreign chain is over-staked.
 - Requires a Custodian to have a sum of capital 3 times larger than the max deposit threshold of the bridge. The ratio of capital required can be dependent on how trust-less the custodian is required to be. The reasoning for the current ratio is:
   - to allow for enough funds for refund of "stranded" participants on the foreign chain; and
   - to ensure that the Custodian can never mint more fake tokens on the foreign chain than he stands to lose on the home chain ⇒ when caught in a fraudulent transaction, he is always incentivised to give up his foreign tokens and recover his larger home stake.
 - Assumes a financially rational custodian that has no external incentives to grief other stakeholders by crashing the system. Whilst the incentive structures are there such that the participants would face no (or perhaps little) financial loss - this would cause a great time-inconvenience to all stakeholders involved.
 
+## Setup
 
-Collaborators:
+## Collaborators
 - Akomba Labs (https://akombalabs.com)
 - Kyber Network (https://kyber.network/)
 - Ethereum Foundation (https://ethereum.org/)
