@@ -1,0 +1,19 @@
+{
+  "name": "peacenotrelay",
+  "version": "1.0.0",
+  "description": "This is a bridge establishing interoperability between Ethereum and Ethereum Classic in a trustless, low-cost way. Instead of relaying block headers from one chain to the other, it uses a trustless Custodian who verifies transactions across the two chains.  The bridge architecture consists of five main components, which are simply symmetrically replicated to get a two-way bridge.",
+  "main": "truffle-config.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YZhenY/peaceNotRelay.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/YZhenY/peaceNotRelay/issues"
+  },
+  "homepage": "https://github.com/YZhenY/peaceNotRelay#readme"
+}
