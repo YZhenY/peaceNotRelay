@@ -4,6 +4,10 @@
   "description": "This is a bridge establishing interoperability between Ethereum and Ethereum Classic in a trustless, low-cost way. Instead of relaying block headers from one chain to the other, it uses a trustless Custodian who verifies transactions across the two chains.  The bridge architecture consists of five main components, which are simply symmetrically replicated to get a two-way bridge.",
   "main": "truffle-config.js",
   "scripts": {
+    "migrateROP": "NETWORK=ROP truffle migrate --network ropsten",
+    "migrateRINK": "NETWORK=RINK truffle migrate --network rinkeby",
+    "migrateDev1": "NETWORK=DEV1 truffle migrate --network development1",
+    "migrateDev2": "NETWORK=DEV2 truffle migrate --network development2",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -15,5 +19,8 @@
   "bugs": {
     "url": "https://github.com/YZhenY/peaceNotRelay/issues"
   },
-  "homepage": "https://github.com/YZhenY/peaceNotRelay#readme"
+  "homepage": "https://github.com/YZhenY/peaceNotRelay#readme",
+  "dependencies": {
+    "truffle-hdwallet-provider": "0.0.5"
+  }
 }

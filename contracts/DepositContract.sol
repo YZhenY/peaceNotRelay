@@ -16,7 +16,7 @@ contract DepositContract {
   uint256 depositedAmount;
   mapping (address => uint256) deposits;
 
-  constructor (address _tokenContract, address custodian) {
+  constructor (address _tokenContract, address _custodian) {
     tokenContract = _tokenContract;
   }
   
@@ -27,13 +27,13 @@ contract DepositContract {
   }
 
   modifier statePreStaked () {
-    if (contractState = 'preStaked')  {
+    if ( keccak256(contractState) == keccak256('preStaked'))  {
       _;
     }
   }
 
     modifier stateStaked () {
-    if (contractState = 'staked')  {
+    if (keccak256(contractState) == keccak256('staked'))  {
       _;
     }
   }
@@ -45,11 +45,10 @@ contract DepositContract {
   event Withdrawal(address indexed withdrawer, uint256 amount, uint256 indexed blockNumber);
 
   function finalizeStake () onlyCustodian statePreStaked public {
-    stakedAmount = this.balance;
-    depositCap = div(this.balance, 2);
+    stakedAmount = address(this).balance;
+    depositCap = address(this).balance.div(2);
     depositedAmount = 0;
     contractState = 'staked';
-
   }
 
   function deposit() payable public {
