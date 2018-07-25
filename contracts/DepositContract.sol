@@ -10,7 +10,7 @@ contract DepositContract {
   using RLP for RLP.Iterator;
   using RLP for bytes;
 
-  string contractState = 'preStaked';
+  string contractState = "preStaked";
   address tokenContract;
   address custodian;
   address custodianETC;
@@ -26,6 +26,10 @@ contract DepositContract {
     address to;
     uint value;
     bytes data;
+    uint8 v;
+    bytes32 r;
+    bytes32 s;
+    address from;
   }
 
   constructor (address _custodian) {
@@ -70,18 +74,47 @@ contract DepositContract {
   }
   
   bytes public print;
+  bytes32 public byte32Tx;
   Transaction public transaction;
   RLP.RLPItem[] public rlpItem;
 
-  function parse(bytes txString) public {
+  function parse(bytes txString, bytes32 msgHash) public {
 
-    // bytes memory something = stringToBytes(txString);
-    // print = something;
+    
+    print = txString;
+    byte32Tx = keccak256(txString);
+    
+
     RLP.RLPItem[] memory list = txString.toRLPItem().toList();
+
+    // can potentially insert: if (signedTransaction.length !== 9) { throw new Error('invalid transaction'); } items()
+    transaction.nonce = list[0].toUint();
     transaction.gasPrice = list[1].toUint();
     transaction.gasLimit = list[2].toUint();
     transaction.to = address(list[3].toUint());
-    transaction.value = list[4].toUint();
+
+    //if value is 0, will revert
+
+    // transaction.value = list[4].toUint();
+
+    //also can fail
+    // transaction.data = list[5].toBytes();
+
+    transaction.data = new bytes(36);
+    for (uint i = 0; i < 36; i++) {
+      transaction.data[i] = txString[txString.length - 103 + i];
+    }
+
+    // transaction.from = ecrecovery(keccak256(txString), txString);
+    
+
+    transaction.v = uint8(list[6].toUint());
+    transaction.r = list[7].toBytes32();
+    transaction.s = list[8].toBytes32();
+    // transaction.from = ecrecover(keccak256(txString), uint8(list[6].toUint()), list[7].toBytes32(), list[8].toBytes32());
+    // bytes32 blank = bytesToBytes32(new bytes(32), 0);
+    transaction.from = ecrecover(msgHash, 28, transaction.r, transaction.s);
+
     /*
     transaction.gasPrice = list[1].toUint();
     transaction.gasLimit = list[2].toUint();
@@ -96,8 +129,61 @@ contract DepositContract {
     */
   }
 
+  function bytesToBytes32(bytes b, uint offset) private pure returns (bytes32) {
+    bytes32 out;
+    for (uint i = 0; i < 32; i++) {
+      out |= bytes32(b[offset + i] & 0xFF) >> (i * 8);
+    }
+    return out;
+  }
+
   function stringToBytes( string s) internal returns (bytes memory b3){
     b3 = bytes(s);
     return b3;
   }
+
+  // function rlpEncode (RLP.RLPItem[] RLPList) internal returns (bytes memory RLPEncoded) {
+  //   for (uint i = 0; i < 6; i++) {
+
+  //   }
+  // }
+
+  function ecrecovery(bytes32 hash, bytes sig) public returns (address) {
+    bytes32 r;
+    bytes32 s;
+    uint8 v;
+
+    if (sig.length != 65) {
+      return 0;
+    }
+
+    assembly {
+      r := mload(add(sig, 32))
+      s := mload(add(sig, 64))
+      v := and(mload(add(sig, 65)), 255)
+    }
+
+    // https://github.com/ethereum/go-ethereum/issues/2053
+    if (v < 27) {
+      v += 27;
+    }
+
+    if (v != 27 && v != 28) {
+      return 0;
+    }
+
+    /* prefix might be needed for geth only
+     * https://github.com/ethereum/go-ethereum/issues/3731
+     */
+    // bytes memory prefix = "\x19Ethereum Signed Message:\n32";
+    // hash = sha3(prefix, hash);
+
+    return ecrecover(hash, v, r, s);
+  }
+
+  function ecverify(bytes32 hash, bytes sig, address signer) public returns (bool) {
+    return signer == ecrecovery(hash, sig);
+  }
+
+
 }
