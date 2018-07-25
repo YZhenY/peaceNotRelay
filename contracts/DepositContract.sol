@@ -79,11 +79,9 @@ contract DepositContract {
   RLP.RLPItem[] public rlpItem;
 
   function parse(bytes txString, bytes32 msgHash) public {
-
-    
+    //DEBUGGING PURPOSES
     print = txString;
     byte32Tx = keccak256(txString);
-    
 
     RLP.RLPItem[] memory list = txString.toRLPItem().toList();
 
@@ -92,9 +90,7 @@ contract DepositContract {
     transaction.gasPrice = list[1].toUint();
     transaction.gasLimit = list[2].toUint();
     transaction.to = address(list[3].toUint());
-
     //if value is 0, will revert
-
     // transaction.value = list[4].toUint();
 
     //also can fail
@@ -106,27 +102,12 @@ contract DepositContract {
     }
 
     // transaction.from = ecrecovery(keccak256(txString), txString);
-    
 
     transaction.v = uint8(list[6].toUint());
     transaction.r = list[7].toBytes32();
     transaction.s = list[8].toBytes32();
-    // transaction.from = ecrecover(keccak256(txString), uint8(list[6].toUint()), list[7].toBytes32(), list[8].toBytes32());
-    // bytes32 blank = bytesToBytes32(new bytes(32), 0);
     transaction.from = ecrecover(msgHash, 28, transaction.r, transaction.s);
 
-    /*
-    transaction.gasPrice = list[1].toUint();
-    transaction.gasLimit = list[2].toUint();
-    transaction.to = address(list[3].toUint());
-    transaction.value = list[4].toUint();
-
-    //Ugly hard coding for now. Can only parse burn transaction.
-    transaction.data = new bytes(36);
-    for (uint i = 0; i < 36; i++) {
-      transaction.data[i] = something[something.length - 103 + i];
-    }
-    */
   }
 
   function bytesToBytes32(bytes b, uint offset) private pure returns (bytes32) {
