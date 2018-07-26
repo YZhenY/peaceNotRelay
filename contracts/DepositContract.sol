@@ -59,6 +59,7 @@ contract DepositContract {
   event ChallangeResolved(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber, bytes signedTx); 
   event Refund(address indexed withdrawer, uint256 amount, uint256 indexed blockNumber);
   event Withdrawal(address indexed withdrawer, uint256 amount, uint256 indexed blockNumber);
+  event Parsed(bytes data, address to, address from);
 
   function finalizeStake () onlyCustodian statePreStaked public {
     stakedAmount = address(this).balance;
@@ -92,7 +93,7 @@ contract DepositContract {
     transaction.r = list[7].toBytes32();
     transaction.s = list[8].toBytes32();
     transaction.from = ecrecover(msgHash, 28, transaction.r, transaction.s);
-
+    Parsed(transaction.data, transaction.to, transaction.from);
   }
 
   function bytesToBytes32(bytes b, uint offset) private pure returns (bytes32) {
