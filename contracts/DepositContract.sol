@@ -36,8 +36,6 @@ contract DepositContract {
     custodian = _custodian;
   }
 
-
-  
   modifier onlyCustodian() {
     if (custodian == msg.sender) {
       _;
@@ -79,10 +77,6 @@ contract DepositContract {
   RLP.RLPItem[] public rlpItem;
 
   function parse(bytes txString, bytes32 msgHash) public {
-    //DEBUGGING PURPOSES
-    print = txString;
-    byte32Tx = keccak256(txString);
-
     RLP.RLPItem[] memory list = txString.toRLPItem().toList();
 
     // can potentially insert: if (signedTransaction.length !== 9) { throw new Error('invalid transaction'); } items()
@@ -91,18 +85,9 @@ contract DepositContract {
     transaction.gasLimit = list[2].toUint();
     transaction.to = address(list[3].toUint());
     //if value is 0, will revert
-    // transaction.value = list[4].toUint();
-
+    transaction.value = list[4].toUint();
     //also can fail
-    // transaction.data = list[5].toBytes();
-
-    transaction.data = new bytes(36);
-    for (uint i = 0; i < 36; i++) {
-      transaction.data[i] = txString[txString.length - 103 + i];
-    }
-
-    // transaction.from = ecrecovery(keccak256(txString), txString);
-
+    transaction.data = list[5].toData();
     transaction.v = uint8(list[6].toUint());
     transaction.r = list[7].toBytes32();
     transaction.s = list[8].toBytes32();
