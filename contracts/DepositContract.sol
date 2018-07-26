@@ -1,4 +1,5 @@
 pragma solidity ^0.4.24;
+pragma experimental ABIEncoderV2;
 
 import "./SafeMath.sol";
 import "./Ownable.sol";
@@ -18,6 +19,7 @@ contract DepositContract {
   uint256 depositCap;
   uint256 depositedAmount;
   mapping (address => uint256) deposits;
+  mapping (bytes32 => uint8) public txLog;
 
   struct Transaction {
     uint nonce;
@@ -61,6 +63,10 @@ contract DepositContract {
   event Withdrawal(address indexed withdrawer, uint256 amount, uint256 indexed blockNumber);
   event Parsed(bytes data, address to, address from);
 
+  function setTokenContract(address _tokenContract) onlyCustodian statePreStaked public {
+    tokenContract = _tokenContract;
+  }
+
   function finalizeStake () onlyCustodian statePreStaked public {
     stakedAmount = address(this).balance;
     depositCap = address(this).balance.div(2);
@@ -71,29 +77,43 @@ contract DepositContract {
   function deposit() payable public {
     deposits[msg.sender] += msg.value;
   }
-  
-  bytes public print;
-  bytes32 public byte32Tx;
-  Transaction public transaction;
-  RLP.RLPItem[] public rlpItem;
 
-  function parse(bytes txString, bytes32 msgHash) public {
-    RLP.RLPItem[] memory list = txString.toRLPItem().toList();
+  Transaction public testTx;
+
+  function submitFraud(bytes rawTx, bytes32 msgHash) public {
+    Transaction memory parsedTx = parse(rawTx, msgHash);
+    require(keccak256(parsedTx.from) == keccak256(custodian));
+    require(keccak256(parsedTx.to) == keccak256(tokenContract));
+    require(txLog[msgHash] == 0);
+    //penalise custodian, possibly change to transfer against reentrancy
+    msg.sender.send(100);
+  }
+
+
+  function parse(bytes rawTx, bytes32 msgHash) public returns (Transaction transaction) {
+    RLP.RLPItem[] memory list = rawTx.toRLPItem().toList();
 
     // can potentially insert: if (signedTransaction.length !== 9) { throw new Error('invalid transaction'); } items()
     transaction.nonce = list[0].toUint();
     transaction.gasPrice = list[1].toUint();
     transaction.gasLimit = list[2].toUint();
-    transaction.to = address(list[3].toUint());
+    transaction.to = list[3].toAddress();
     //if value is 0, will revert
-    transaction.value = list[4].toUint();
+    if (!list[4].isEmpty()) {
+      transaction.value = list[4].toUint();
+    }
     //also can fail
-    transaction.data = list[5].toData();
+    if (!list[5].isEmpty()) {
+      transaction.data = list[5].toData();
+    }
     transaction.v = uint8(list[6].toUint());
-    transaction.r = list[7].toBytes32();
+    transaction.r = list[7].toBytes32(); 
     transaction.s = list[8].toBytes32();
     transaction.from = ecrecover(msgHash, 28, transaction.r, transaction.s);
-    Parsed(transaction.data, transaction.to, transaction.from);
+    emit Parsed(transaction.data, transaction.to, transaction.from);
+    //fordebbugging
+    testTx = transaction;
+    return transaction;
   }
 
   function bytesToBytes32(bytes b, uint offset) private pure returns (bytes32) {
@@ -108,12 +128,6 @@ contract DepositContract {
     b3 = bytes(s);
     return b3;
   }
-
-  // function rlpEncode (RLP.RLPItem[] RLPList) internal returns (bytes memory RLPEncoded) {
-  //   for (uint i = 0; i < 6; i++) {
-
-  //   }
-  // }
 
   function ecrecovery(bytes32 hash, bytes sig) public returns (address) {
     bytes32 r;
