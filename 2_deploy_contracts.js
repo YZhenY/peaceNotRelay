@@ -10,7 +10,6 @@ if (network === "ROP" || network === "DEV1") {
     };
 }
 
-
 //REPLACE WITH TOKEN CONTRACT
 if (network === "RINK" || network === "DEV2") {
     var DepositContract = artifacts.require("./DepositContract.sol");
@@ -19,5 +18,7 @@ if (network === "RINK" || network === "DEV2") {
       deployer.deploy(DepositContract);
     };
 }
+
+
 
 
