@@ -79,20 +79,24 @@ contract DepositContract {
 
   uint256 public nonce = 0;
 
+
+  //TODO: ADD only when staked
   function deposit(address _receiver) payable public {
     depositedAmount += msg.value;
     bytes memory X = uint256ToBytes(msg.value);
     bytes memory Y = addressToBytes(_receiver);
     bytes memory Z = uint256ToBytes(block.number);
-    txLog[keccak256(X.concat(Y).concat(Z).concat(uint256ToBytes(nonce)))];
+    txLog[keccak256(X.concat(Y).concat(Z).concat(uint256ToBytes(nonce)))] = 1;
     nonce += 1;
     emit Deposit(msg.sender, msg.value, _receiver, block.number, nonce);
   }
 
   Transaction public testTx;
 
+  //ADD ONLY WHEN STAKED
   function submitFraud(bytes rawTx, bytes32 msgHash) public {
     Transaction memory parsedTx = parse(rawTx, msgHash);
+
     require(keccak256(parsedTx.from) == keccak256(custodian));
     require(keccak256(parsedTx.to) == keccak256(tokenContract));
     require(txLog[msgHash] == 0);
@@ -132,7 +136,8 @@ contract DepositContract {
     X = data.slice(10, 74).toUint(0);
     Y = data.slice(74, 138).toAddress(0);
     Z = data.slice(138, 202).toUint(0);
-    return (X, Y, Z);
+    txNonce = data.slice(202, 66).toUint(0);
+    return (X, Y, Z, txNonce);
   }
 
   function bytesToBytes32(bytes b, uint offset) private pure returns (bytes32) {
