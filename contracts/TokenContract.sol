@@ -5,8 +5,9 @@ import "./SafeMath.sol";
 import "./Ownable.sol";
 import "./RLP.sol";
 import "./BytesLib.sol";
+import "./StandardToken.sol";
 
-contract DepositContract {
+contract TokenContract is StandardToken {
   using SafeMath for uint256;
   using RLP for RLP.RLPItem;
   using RLP for RLP.Iterator;
@@ -14,14 +15,13 @@ contract DepositContract {
   using BytesLib for bytes;
 
   string contractState = "preStaked";
-  address tokenContract;
+  address depositContract;
   address custodian;
-  address custodianETC;
+  address custodianETH;
   uint256 stakedAmount;
-  uint256 depositCap;
-  uint256 depositedAmount;
-  mapping (address => uint256) deposits;
-  mapping (bytes32 => uint8) public txLog;
+  uint256 mintCap;
+  uint256 mintedAmount;
+  mapping (bytes32 => uint8) public burnLog;
 
 
   struct Transaction {
@@ -59,53 +59,47 @@ contract DepositContract {
     }
   }
   
-  event Deposit(address indexed depositer, uint256 amount, address indexed depositedTo, uint256 indexed blockNumber, uint256 nonce);
+  event Mint(uint256 amount, address indexed depositedTo, uint256 indexed blockNumber, uint256 ETCBlockNumber,  uint256 nonce);
   event Challenge(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber);
   event ChallangeResolved(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber, bytes signedTx); 
   event Refund(address indexed withdrawer, uint256 amount, uint256 indexed blockNumber);
   event Withdrawal(address indexed withdrawer, uint256 amount, uint256 indexed blockNumber);
   event Parsed(bytes data, address to, address from);
 
-  function setTokenContract(address _tokenContract) onlyCustodian statePreStaked public {
-    tokenContract = _tokenContract;
+  function setDepositContract(address _depositContract) onlyCustodian statePreStaked public {
+    depositContract = _depositContract;
   }
 
   function finalizeStake () onlyCustodian statePreStaked public {
     stakedAmount = address(this).balance;
-    depositCap = address(this).balance.div(2);
-    depositedAmount = 0;
+    mintCap = address(this).balance.div(2);
+    mintedAmount = 0;
     contractState = "staked";
   }
 
-  uint256 public nonce = 0;
-
   //TODO: ADD only when staked
-  function deposit(address _receiver) payable public {
-    depositedAmount += msg.value;
-    bytes memory X = uint256ToBytes(msg.value);
-    bytes memory Y = addressToBytes(_receiver);
-    bytes memory Z = uint256ToBytes(block.number);
-    txLog[keccak256(X.concat(Y).concat(Z).concat(uint256ToBytes(nonce)))] = 1;
-    nonce += 1;
-    emit Deposit(msg.sender, msg.value, _receiver, block.number, nonce);
+  function mint(uint256 _X, address _Y, uint256 _Z, uint256 _nonce) onlyCustodian public {
+    mintedAmount += _X;
+    emit Mint(_X, _Y, _Z, block.number, _nonce);
   }
 
+
+  //for DEBUGGING
   Transaction public testTx;
 
   //ADD ONLY WHEN STAKED
-  function submitFraud(bytes rawTx, bytes32 msgHash) public {
-    Transaction memory parsedTx = parse(rawTx, msgHash);
-    require(keccak256(parsedTx.from) == keccak256(custodian));
-    require(keccak256(parsedTx.to) == keccak256(tokenContract));
-    require(verifyMintTxParams(parsedTx.data) == 0);
-    //penalise custodian, possibly change to transfer against reentrancy
-    msg.sender.send(100);
-  }
+  // function submitFraud(bytes rawTx, bytes32 msgHash) public {
+  //   Transaction memory parsedTx = parse(rawTx, msgHash);
+  //   require(keccak256(parsedTx.from) == keccak256(custodian));
+  //   require(keccak256(parsedTx.to) == keccak256(tokenContract));
+  //   require(verifyMintTxParams(parsedTx.data) == 0);
+  //   //penalise custodian, possibly change to transfer against reentrancy
+  //   msg.sender.send(100);
+  // }
 
 
   function parse(bytes rawTx, bytes32 msgHash) public returns (Transaction transaction) {
     RLP.RLPItem[] memory list = rawTx.toRLPItem().toList();
-
     // can potentially insert: if (signedTransaction.length !== 9) { throw new Error('invalid transaction'); } items()
     transaction.nonce = list[0].toUint();
     transaction.gasPrice = list[1].toUint();
@@ -131,10 +125,10 @@ contract DepositContract {
 
 
   //hashes appropriate data then verifies against txLog
-  function verifyMintTxParams(bytes data) public returns (uint8) {
-    assert(data.slice(0,10).equal(mintSignature));
-    return txLog[keccak256(data.slice(10, 266))];
-  }
+  // function verifyMintTxParams(bytes data) public returns (uint8) {
+  //   assert(data.slice(0,10).equal(mintSignature));
+  //   return txLog[keccak256(data.slice(10, 266))];
+  // }
 
   //NEEDS TESTING
   function parseXYZ(bytes data) public returns (uint X, address Y, uint Z, uint txNonce) {
