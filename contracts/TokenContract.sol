@@ -21,6 +21,7 @@ contract TokenContract is StandardToken {
   uint256 stakedAmount;
   uint256 mintCap;
   uint256 mintedAmount;
+  mapping (bytes32 => uint8) public mintLog;
   mapping (bytes32 => uint8) public burnLog;
 
 
@@ -73,13 +74,14 @@ contract TokenContract is StandardToken {
   function finalizeStake () onlyCustodian statePreStaked public {
     stakedAmount = address(this).balance;
     mintCap = address(this).balance.div(2);
-    mintedAmount = 0;
+    totalSupply_ = 0;
     contractState = "staked";
   }
 
   //TODO: ADD only when staked
   function mint(uint256 _X, address _Y, uint256 _Z, uint256 _nonce) onlyCustodian public {
-    mintedAmount += _X;
+    totalSupply_ += _X;
+    balance[_Y] += _X;
     emit Mint(_X, _Y, _Z, block.number, _nonce);
   }
 
