@@ -78,13 +78,13 @@ contract TokenContract is StandardToken {
     contractState = "staked";
   }
 
-  //TODO: ADD only when staked
+  //TODO: NEED TO ADD mintLog for duplicate messages
   function mint(uint256 _X, address _Y, uint256 _Z, uint256 _nonce) onlyCustodian public {
+    
     totalSupply_ += _X;
-    balance[_Y] += _X;
+    balances[_Y] += _X;
     emit Mint(_X, _Y, _Z, block.number, _nonce);
   }
-
 
   //for DEBUGGING
   Transaction public testTx;
@@ -171,43 +171,5 @@ contract TokenContract is StandardToken {
     }
   }
 
-  
-
-  function ecrecovery(bytes32 hash, bytes sig) public returns (address) {
-    bytes32 r;
-    bytes32 s;
-    uint8 v;
-
-    if (sig.length != 65) {
-      return 0;
-    }
-
-    assembly {
-      r := mload(add(sig, 32))
-      s := mload(add(sig, 64))
-      v := and(mload(add(sig, 65)), 255)
-    }
-
-    // https://github.com/ethereum/go-ethereum/issues/2053
-    if (v < 27) {
-      v += 27;
-    }
-
-    if (v != 27 && v != 28) {
-      return 0;
-    }
-
-    /* prefix might be needed for geth only
-     * https://github.com/ethereum/go-ethereum/issues/3731
-     */
-    // bytes memory prefix = "\x19Ethereum Signed Message:\n32";
-    // hash = sha3(prefix, hash);
-
-    return ecrecover(hash, v, r, s);
-  }
-
-  function ecverify(bytes32 hash, bytes sig, address signer) public returns (bool) {
-    return signer == ecrecovery(hash, sig);
-  }
 
 }

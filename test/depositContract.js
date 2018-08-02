@@ -35,7 +35,7 @@ console.log(serializedTx.toString());
 
 var tokenContract = "0xc40b249a7cde0fca8fadcf4eba8dee933b460bd7";
 
-contract('Parser Test', async (accounts) => {
+contract('Deposit Contract', async (accounts) => {
   beforeEach(async () => {
     depositContract = await DepositContract.new(accounts[0]);
     await depositContract.setTokenContract(tokenContract);
@@ -70,5 +70,7 @@ contract('Parser Test', async (accounts) => {
       console.log(test, `for ${transactionFields[i]}: ${parsedTxValue} should be ${actualDummyParam}`);
     }
   })
+
+
 
 })
