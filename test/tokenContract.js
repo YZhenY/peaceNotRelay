@@ -1,4 +1,5 @@
 var TokenContract = artifacts.require("TokenContract");
+var ERC721 = artifacts.require("ERC721BasicToken.sol");
 var testHelpers = require('../utils/testHelpers')(web3);
 var dummyTx = require('../utils/dummyRawTx.json');
 var web3Utils = require('web3').utils;
@@ -41,9 +42,7 @@ contract('Token Contract Test', async (accounts) => {
   })
 
   it("should mint()", async() => {
-    tokenContract.mint(10, accounts[0], 2, 0);
+   
   })
-
-  
 
 })

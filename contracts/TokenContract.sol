@@ -5,9 +5,10 @@ import "./SafeMath.sol";
 import "./Ownable.sol";
 import "./RLP.sol";
 import "./BytesLib.sol";
-import "./StandardToken.sol";
+import "./ERC721Basic.sol";
+import "./ERC721BasicToken.sol";
 
-contract TokenContract is StandardToken {
+contract TokenContract is ERC721BasicToken {
   using SafeMath for uint256;
   using RLP for RLP.RLPItem;
   using RLP for RLP.Iterator;
@@ -25,22 +26,6 @@ contract TokenContract is StandardToken {
   mapping (bytes32 => uint8) public burnLog;
 
 
-  struct Transaction {
-    uint nonce;
-    uint gasPrice;
-    uint gasLimit;
-    address to;
-    uint value;
-    bytes data;
-    uint8 v;
-    bytes32 r;
-    bytes32 s;
-    address from;
-  }
-
-  constructor (address _custodian) {
-    custodian = _custodian;
-  }
 
   modifier onlyCustodian() {
     if (custodian == msg.sender) {
@@ -59,13 +44,17 @@ contract TokenContract is StandardToken {
       _;
     }
   }
-  
+
   event Mint(uint256 amount, address indexed depositedTo, uint256 nonce, bytes32 mintHash);
   event Challenge(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber);
   event ChallangeResolved(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber, bytes signedTx); 
   event Refund(address indexed withdrawer, uint256 amount, uint256 indexed blockNumber);
   event Withdrawal(address indexed withdrawer, uint256 amount, uint256 indexed blockNumber);
   event Parsed(bytes data, address to, address from);
+
+
+
+  
 
   function setDepositContract(address _depositContract) onlyCustodian statePreStaked public {
     depositContract = _depositContract;
@@ -74,57 +63,109 @@ contract TokenContract is StandardToken {
   function finalizeStake () onlyCustodian statePreStaked public {
     stakedAmount = address(this).balance;
     mintCap = address(this).balance.div(2);
-    totalSupply_ = 0;
+
     contractState = "staked";
   }
 
   uint32 public mintNonce = 0;
 
-  function mint(uint256 _X, address _Y) public {
-    totalSupply_ += _X;
-    balances[_Y] += _X;
-    //might have to log the X, Y details
-    bytes32 mintHash = keccak256(_X, _Y, mintNonce);
+  function mint(uint256 _value, address _to) public {
+
+
+    //might have to log the value, to, Z details
+    bytes memory value = uint256ToBytes(_value);
+    bytes memory to = addressToBytes(_to);
+    bytes memory Z = uint256ToBytes(mintNonce);
+    bytes32 mintHash = keccak256(value.concat(to).concat(Z));
     mintLog[mintHash] = 1;
-    emit Mint(_X, _Y, mintNonce, mintHash);
+    emit Mint(_value, _to, mintNonce, mintHash);
+    mintNonce += 1;
   }
 
-  //for DEBUGGING
-  Transaction public testTx;
 
-  //ADD ONLY WHEN STAKED
-  // function submitFraud(bytes rawTx, bytes32 msgHash) public {
-  //   Transaction memory parsedTx = parse(rawTx, msgHash);
-  //   require(keccak256(parsedTx.from) == keccak256(custodian));
-  //   require(keccak256(parsedTx.to) == keccak256(tokenContract));
-  //   require(verifyMintTxParams(parsedTx.data) == 0);
-  //   //penalise custodian, possibly change to transfer against reentrancy
-  //   msg.sender.send(100);
+  /* ERC721 Related Functions --------------------------------------------------*/
+  // Mapping from token ID to approved address
+  mapping (uint256 => address) public custodianApproval;
+
+  event TransferRequest(address from, address to, uint256 _tokenId);
+  
+  /**
+   * @dev Transfers the ownership of a given token ID to another address
+   * Usage of this method is discouraged, use `safeTransferFrom` whenever possible
+   * Requires the msg sender to be the owner, approved, or operator
+   * @param _from current owner of the token
+   * @param _to address to receive the ownership of the given token ID
+   * @param _tokenId uint256 ID of the token to be transferred
+  */
+  function transferFrom(
+    address _from,
+    address _to,
+    uint256 _tokenId
+  )
+    public
+  {
+    require(isApprovedOrOwner(msg.sender, _tokenId));
+    require(_from != address(0));
+    require(_to != address(0));
+
+    clearApproval(_from, _tokenId);
+    custodianApproval[_tokenId] = _to;
+
+    emit TransferRequest(_from, _to, _tokenId);
+  }
+
+  function custodianApprove(uint256 _tokenId) onlyCustodian public {
+    require(exists(_tokenId));
+    address _to = custodianApproval[_tokenId];
+    address _from = ownerOf(_tokenId);
+    removeTokenFrom(_from, _tokenId);
+    addTokenTo(_to, _tokenId);
+    emit Transfer(_from, _to, _tokenId);
+    clearCustodianApproval(_tokenId);
+  }
+
+  function revertTransfer(uint256 _tokenId) public {
+    require(isApprovedOrOwner(msg.sender, _tokenId));
+    
+    clearCustodianApproval(_tokenId);
+  }
+
+  /**
+   * @dev Internal function to clear current custodian approval of a given token ID
+   * @param _tokenId uint256 ID of the token to be transferred
+   */
+  function clearCustodianApproval(uint256 _tokenId) internal {
+    if (custodianApproval[_tokenId] != address(0)) {
+      custodianApproval[_tokenId] = address(0);
+    }
+  }
+
+  
+
+
+  /* Util functions --------------------------------------------------*/
+  // function parse(bytes rawTx, bytes32 msgHash) public returns (Transaction transaction) {
+  //   RLP.RLPItem[] memory list = rawTx.toRLPItem().toList();
+  //   // can potentially insert: if (signedTransaction.length !== 9) { throw new Error('invalid transaction'); } items()
+  //   transaction.nonce = list[0].toUint();
+  //   transaction.gasPrice = list[1].toUint();
+  //   transaction.gasLimit = list[2].toUint();
+  //   transaction.to = list[3].toAddress();
+  //   if (!list[4].isEmpty()) {
+  //     transaction.value = list[4].toUint();
+  //   }
+  //   if (!list[5].isEmpty()) {
+  //     transaction.data = list[5].toData();
+  //   }
+  //   transaction.v = uint8(list[6].toUint());
+  //   transaction.r = list[7].toBytes32(); 
+  //   transaction.s = list[8].toBytes32();
+  //   transaction.from = ecrecover(msgHash, 28, transaction.r, transaction.s);
+  //   emit Parsed(transaction.data, transaction.to, transaction.from);
+  //   //for debbugging
+  //   testTx = transaction;
+  //   return transaction;
   // }
-
-
-  function parse(bytes rawTx, bytes32 msgHash) public returns (Transaction transaction) {
-    RLP.RLPItem[] memory list = rawTx.toRLPItem().toList();
-    // can potentially insert: if (signedTransaction.length !== 9) { throw new Error('invalid transaction'); } items()
-    transaction.nonce = list[0].toUint();
-    transaction.gasPrice = list[1].toUint();
-    transaction.gasLimit = list[2].toUint();
-    transaction.to = list[3].toAddress();
-    if (!list[4].isEmpty()) {
-      transaction.value = list[4].toUint();
-    }
-    if (!list[5].isEmpty()) {
-      transaction.data = list[5].toData();
-    }
-    transaction.v = uint8(list[6].toUint());
-    transaction.r = list[7].toBytes32(); 
-    transaction.s = list[8].toBytes32();
-    transaction.from = ecrecover(msgHash, 28, transaction.r, transaction.s);
-    emit Parsed(transaction.data, transaction.to, transaction.from);
-    //for debbugging
-    testTx = transaction;
-    return transaction;
-  }
 
   bytes mintSignature = "0xe32e7aff";
 

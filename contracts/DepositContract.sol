@@ -20,8 +20,7 @@ contract DepositContract {
   uint256 stakedAmount;
   uint256 depositCap;
   uint256 depositedAmount;
-  mapping (address => uint256) deposits;
-  mapping (bytes32 => uint8) public txLog;
+  mapping (bytes32 => uint256) public mintHashToAmount;
 
 
   struct Transaction {
@@ -59,7 +58,7 @@ contract DepositContract {
     }
   }
   
-  event Deposit(address indexed depositer, uint256 amount, address indexed depositedTo, uint256 indexed blockNumber, uint256 nonce);
+  event Deposit(address indexed depositer, uint256 amount, bytes32 mintHash);
   event Challenge(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber);
   event ChallangeResolved(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber, bytes signedTx); 
   event Refund(address indexed withdrawer, uint256 amount, uint256 indexed blockNumber);
@@ -77,17 +76,10 @@ contract DepositContract {
     contractState = "staked";
   }
 
-  uint256 public nonce = 0;
-
-  //TODO: ADD only when staked
-  function deposit(address _receiver) payable public {
+  function deposit(bytes32 _mintHash) payable public {
     depositedAmount += msg.value;
-    bytes memory X = uint256ToBytes(msg.value);
-    bytes memory Y = addressToBytes(_receiver);
-    bytes memory Z = uint256ToBytes(block.number);
-    txLog[keccak256(X.concat(Y).concat(Z).concat(uint256ToBytes(nonce)))] = 1;
-    nonce += 1;
-    emit Deposit(msg.sender, msg.value, _receiver, block.number, nonce);
+    mintHashToAmount[_mintHash] = mintHashToAmount[_mintHash].add(msg.value);
+    emit Deposit(msg.sender, msg.value, _mintHash);
   }
 
   Transaction public testTx;
@@ -130,10 +122,10 @@ contract DepositContract {
   bytes mintSignature = "0xe32e7aff";
 
 
-  //hashes appropriate data then verifies against txLog
+  //hashes appropriate data then verifies against depositLog
   function verifyMintTxParams(bytes data) public returns (uint8) {
     assert(data.slice(0,10).equal(mintSignature));
-    return txLog[keccak256(data.slice(10, 266))];
+    // return depositLog[keccak256(data.slice(10, 266))];
   }
 
   //NEEDS TESTING

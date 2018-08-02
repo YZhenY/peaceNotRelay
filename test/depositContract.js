@@ -70,7 +70,4 @@ contract('Deposit Contract', async (accounts) => {
       console.log(test, `for ${transactionFields[i]}: ${parsedTxValue} should be ${actualDummyParam}`);
     }
   })
-
-
-
 })
