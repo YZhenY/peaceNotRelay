@@ -60,7 +60,7 @@ contract TokenContract is StandardToken {
     }
   }
   
-  event Mint(uint256 amount, address indexed depositedTo, uint256 indexed blockNumber, uint256 ETCBlockNumber,  uint256 nonce);
+  event Mint(uint256 amount, address indexed depositedTo, uint256 nonce, bytes32 mintHash);
   event Challenge(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber);
   event ChallangeResolved(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber, bytes signedTx); 
   event Refund(address indexed withdrawer, uint256 amount, uint256 indexed blockNumber);
@@ -78,12 +78,15 @@ contract TokenContract is StandardToken {
     contractState = "staked";
   }
 
-  //TODO: NEED TO ADD mintLog for duplicate messages
-  function mint(uint256 _X, address _Y, uint256 _Z, uint256 _nonce) onlyCustodian public {
-    
+  uint32 public mintNonce = 0;
+
+  function mint(uint256 _X, address _Y) public {
     totalSupply_ += _X;
     balances[_Y] += _X;
-    emit Mint(_X, _Y, _Z, block.number, _nonce);
+    //might have to log the X, Y details
+    bytes32 mintHash = keccak256(_X, _Y, mintNonce);
+    mintLog[mintHash] = 1;
+    emit Mint(_X, _Y, mintNonce, mintHash);
   }
 
   //for DEBUGGING
