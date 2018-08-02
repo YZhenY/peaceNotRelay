@@ -71,13 +71,13 @@ contract TokenContract is ERC721BasicToken {
 
   function mint(uint256 _value, address _to) public {
 
-
     //might have to log the value, to, Z details
     bytes memory value = uint256ToBytes(_value);
     bytes memory to = addressToBytes(_to);
     bytes memory Z = uint256ToBytes(mintNonce);
     bytes32 mintHash = keccak256(value.concat(to).concat(Z));
     mintLog[mintHash] = 1;
+    _mint(to, mintHash);
     emit Mint(_value, _to, mintNonce, mintHash);
     mintNonce += 1;
   }
@@ -215,5 +215,9 @@ contract TokenContract is ERC721BasicToken {
     }
   }
 
+https://ethereum.stackexchange.com/questions/6498/how-to-convert-a-uint256-type-integer-into-a-bytes32
+function bytes32ToUint256(bytes32 n) internal returns (uint256) {
+    return uint256(n);
+}
 
 }
