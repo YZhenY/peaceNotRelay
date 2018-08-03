@@ -42,7 +42,9 @@ contract('Token Contract Test', async (accounts) => {
   })
 
   it("should mint()", async() => {
-   
+    var result = await tokenContract.mint(10000, accounts[1]);
+    console.log("MINT: ", result);
+    // await tokenContract.transferFrom(accounts[1], {from: accounts[1]})  
   })
 
 })
