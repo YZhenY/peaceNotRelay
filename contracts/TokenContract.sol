@@ -25,7 +25,9 @@ contract TokenContract is ERC721BasicToken {
   mapping (bytes32 => uint8) public mintLog;
   mapping (bytes32 => uint8) public burnLog;
 
-
+  constructor (address _custodian) {
+    custodian = _custodian;
+  }
 
   modifier onlyCustodian() {
     if (custodian == msg.sender) {
@@ -52,9 +54,6 @@ contract TokenContract is ERC721BasicToken {
   event Withdrawal(address indexed withdrawer, uint256 amount, uint256 indexed blockNumber);
   event Parsed(bytes data, address to, address from);
 
-
-
-  
 
   function setDepositContract(address _depositContract) onlyCustodian statePreStaked public {
     depositContract = _depositContract;
