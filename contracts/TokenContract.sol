@@ -51,7 +51,7 @@ contract TokenContract is ERC721BasicToken {
   event Challenge(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber);
   event ChallangeResolved(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber, bytes signedTx); 
   event Refund(address indexed withdrawer, uint256 amount, uint256 indexed blockNumber);
-  event Withdrawal(address indexed withdrawer, uint256 amount, uint256 indexed blockNumber);
+  event Withdraw(uint256 tokenId);
   event Parsed(bytes data, address to, address from);
 
 
@@ -82,10 +82,18 @@ contract TokenContract is ERC721BasicToken {
   }
 
 
+  //USED TO ANNOUNCE A WITHDRAWL (DOESNT NECESSISTATE SUBMISSION)
+  function withdraw(uint256 _tokenId) public {
+    emit Withdraw(_tokenId);
+  }
+
+
   /* ERC721 Related Functions --------------------------------------------------*/
   // Mapping from token ID to approved address
   mapping (uint256 => address) public custodianApproval;
 
+
+  
   event TransferRequest(address from, address to, uint256 _tokenId);
   
   /**

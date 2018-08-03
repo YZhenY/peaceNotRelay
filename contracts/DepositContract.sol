@@ -65,6 +65,12 @@ contract DepositContract {
   event Withdrawal(address indexed withdrawer, uint256 amount, uint256 indexed blockNumber);
   event Parsed(bytes data, address to, address from);
 
+  bytes4 mintSignature = 0xe32e7aff;
+  bytes4 withdrawSignature = 0x2e1a7d4d;
+  bytes4 transferFromSignature = 0x23b872dd;
+  bytes4 custodianApproveSignature = 0xeae02892;
+
+
   function setTokenContract(address _tokenContract) onlyCustodian statePreStaked public {
     tokenContract = _tokenContract;
   }
@@ -82,6 +88,23 @@ contract DepositContract {
     emit Deposit(msg.sender, msg.value, _mintHash);
   }
 
+  // mintHashToTimestamp
+  mapping (uint256 => uint256) challangeTime;
+  // mintHashToAddress
+  mapping (uint256 => address) challengeAddress;
+
+  function withdraw(address _to, uint256 _mintHash, bytes _withdrawalTx, bytes _lastTx, bytes _custodianTx) public {
+    Transaction withdrawalTx = parse(_withdrawalTx);
+    Transaction lastTx = parse(_lastTx);
+    // Transaction custodianTx = parse(_custodianTx);
+    require(withdrawalTx.from == lastTx.to);
+    //TODO: compare custodianTx and lastTx token_ids here
+    //start challenge
+    challengeTime[_mintHash] = now + 10 minutes;
+    challengeAddress[_mintHash] = _to;
+  }
+
+
   Transaction public testTx;
 
   //ADD ONLY WHEN STAKED
@@ -95,8 +118,8 @@ contract DepositContract {
   }
 
   /* Util functions --------------------------------------------------*/
-  function parse(bytes rawTx, bytes32 msgHash) public returns (Transaction transaction) {
-    RLP.RLPItem[] memory list = rawTx.toRLPItem().toList();
+  function parse(bytes _rawTx, bytes32 _msgHash) public returns (Transaction transaction) {
+    RLP.RLPItem[] memory list = _rawTx.toRLPItem().toList();
     // can potentially insert: if (signedTransaction.length !== 9) { throw new Error('invalid transaction'); } items()
     transaction.nonce = list[0].toUint();
     transaction.gasPrice = list[1].toUint();
@@ -111,15 +134,12 @@ contract DepositContract {
     transaction.v = uint8(list[6].toUint());
     transaction.r = list[7].toBytes32(); 
     transaction.s = list[8].toBytes32();
-    transaction.from = ecrecover(msgHash, 28, transaction.r, transaction.s);
+    transaction.from = ecrecover(_msgHash, 28, transaction.r, transaction.s);
     emit Parsed(transaction.data, transaction.to, transaction.from);
     //for debbugging
     testTx = transaction;
     return transaction;
   }
-
-  bytes mintSignature = "0xe32e7aff";
-
 
   //hashes appropriate data then verifies against depositLog
   function verifyMintTxParams(bytes data) public returns (uint8) {
@@ -136,6 +156,16 @@ contract DepositContract {
     txNonce = data.slice(202, 266).toUint(0);
     return (X, Y, Z, txNonce);
   }
+
+  function parseData(bytes data) public returns (bytes[] result) {
+    uint z = (data.length - 10).div(64).add(1);
+    result[0] = data.slice(0,10);
+    for (uint i = 1; i < z; i++) {
+      result[i] = data.slice(10 + (i-1)*64, 10 + (i)*64);
+    }
+    return result;
+  }
+
 
   function bytesToBytes32(bytes b, uint offset) private pure returns (bytes32) {
     bytes32 out;
