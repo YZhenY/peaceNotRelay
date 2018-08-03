@@ -166,8 +166,6 @@ contract TokenContract is ERC721BasicToken {
   //   return transaction;
   // }
 
-  bytes mintSignature = "0xe32e7aff";
-
 
   //hashes appropriate data then verifies against txLog
   // function verifyMintTxParams(bytes data) public returns (uint8) {

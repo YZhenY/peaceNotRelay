@@ -20,7 +20,7 @@ contract DepositContract {
   uint256 stakedAmount;
   uint256 depositCap;
   uint256 depositedAmount;
-  mapping (bytes32 => uint256) public mintHashToAmount;
+  mapping (uint256 => uint256) public mintHashToAmount;
 
 
   struct Transaction {
@@ -58,7 +58,7 @@ contract DepositContract {
     }
   }
   
-  event Deposit(address indexed depositer, uint256 amount, bytes32 mintHash);
+  event Deposit(address indexed depositer, uint256 amount, byteuint256s32 mintHash);
   event Challenge(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber);
   event ChallangeResolved(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber, bytes signedTx); 
   event Refund(address indexed withdrawer, uint256 amount, uint256 indexed blockNumber);
@@ -76,7 +76,7 @@ contract DepositContract {
     contractState = "staked";
   }
 
-  function deposit(bytes32 _mintHash) payable public {
+  function deposit(uint256 _mintHash) payable public {
     depositedAmount += msg.value;
     mintHashToAmount[_mintHash] = mintHashToAmount[_mintHash].add(msg.value);
     emit Deposit(msg.sender, msg.value, _mintHash);
@@ -94,10 +94,9 @@ contract DepositContract {
     msg.sender.send(100);
   }
 
-
+  /* Util functions --------------------------------------------------*/
   function parse(bytes rawTx, bytes32 msgHash) public returns (Transaction transaction) {
     RLP.RLPItem[] memory list = rawTx.toRLPItem().toList();
-
     // can potentially insert: if (signedTransaction.length !== 9) { throw new Error('invalid transaction'); } items()
     transaction.nonce = list[0].toUint();
     transaction.gasPrice = list[1].toUint();
