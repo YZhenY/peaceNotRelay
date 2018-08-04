@@ -182,14 +182,14 @@ contract TokenContract is ERC721BasicToken {
   // }
 
   //NEEDS TESTING
-  function parseXYZ(bytes data) public returns (uint X, address Y, uint Z, uint txNonce) {
-    require(data.slice(0,10).equal(mintSignature));
-    X = data.slice(10, 74).toUint(0);
-    Y = data.slice(74, 138).toAddress(0);
-    Z = data.slice(138, 202).toUint(0);
-    txNonce = data.slice(202, 266).toUint(0);
-    return (X, Y, Z, txNonce);
-  }
+  // function parseXYZ(bytes data) public returns (uint X, address Y, uint Z, uint txNonce) {
+  //   require(data.slice(0,10).equal(mintSignature));
+  //   X = data.slice(10, 74).toUint(0);
+  //   Y = data.slice(74, 138).toAddress(0);
+  //   Z = data.slice(138, 202).toUint(0);
+  //   txNonce = data.slice(202, 266).toUint(0);
+  //   return (X, Y, Z, txNonce);
+  // }
 
   function bytesToBytes32(bytes b, uint offset) private pure returns (bytes32) {
     bytes32 out;

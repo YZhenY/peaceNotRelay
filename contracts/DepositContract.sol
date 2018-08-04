@@ -58,7 +58,7 @@ contract DepositContract {
     }
   }
   
-  event Deposit(address indexed depositer, uint256 amount, byteuint256s32 mintHash);
+  event Deposit(address indexed depositer, uint256 amount, uint256 mintHash);
   event Challenge(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber);
   event ChallangeResolved(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber, bytes signedTx); 
   event Refund(address indexed withdrawer, uint256 amount, uint256 indexed blockNumber);
@@ -89,33 +89,33 @@ contract DepositContract {
   }
 
   // mintHashToTimestamp
-  mapping (uint256 => uint256) challangeTime;
+  mapping (uint256 => uint256) challengeTime;
   // mintHashToAddress
   mapping (uint256 => address) challengeAddress;
 
   function withdraw(address _to, uint256 _mintHash, bytes _withdrawalTx, bytes _lastTx, bytes _custodianTx) public {
-    Transaction withdrawalTx = parse(_withdrawalTx);
-    Transaction lastTx = parse(_lastTx);
-    // Transaction custodianTx = parse(_custodianTx);
-    require(withdrawalTx.from == lastTx.to);
-    //TODO: compare custodianTx and lastTx token_ids here
-    //start challenge
-    challengeTime[_mintHash] = now + 10 minutes;
-    challengeAddress[_mintHash] = _to;
+    // Transaction withdrawalTx = parse(_withdrawalTx);
+    // Transaction lastTx = parse(_lastTx);
+    // // Transaction custodianTx = parse(_custodianTx);
+    // require(withdrawalTx.from == lastTx.to);
+    // //TODO: compare custodianTx and lastTx token_ids here
+    // //start challenge
+    // challengeTime[_mintHash] = now + 10 minutes;
+    // challengeAddress[_mintHash] = _to;
   }
 
 
   Transaction public testTx;
 
   //ADD ONLY WHEN STAKED
-  function submitFraud(bytes rawTx, bytes32 msgHash) public {
-    Transaction memory parsedTx = parse(rawTx, msgHash);
-    require(keccak256(parsedTx.from) == keccak256(custodian));
-    require(keccak256(parsedTx.to) == keccak256(tokenContract));
-    require(verifyMintTxParams(parsedTx.data) == 0);
-    //penalise custodian, possibly change to transfer against reentrancy
-    msg.sender.send(100);
-  }
+  // function submitFraud(bytes rawTx, bytes32 msgHash) public {
+  //   Transaction memory parsedTx = parse(rawTx, msgHash);
+  //   require(keccak256(parsedTx.from) == keccak256(custodian));
+  //   require(keccak256(parsedTx.to) == keccak256(tokenContract));
+  //   require(verifyMintTxParams(parsedTx.data) == 0);
+  //   //penalise custodian, possibly change to transfer against reentrancy
+  //   msg.sender.send(100);
+  // }
 
   /* Util functions --------------------------------------------------*/
   function parse(bytes _rawTx, bytes32 _msgHash) public returns (Transaction transaction) {
@@ -142,29 +142,32 @@ contract DepositContract {
   }
 
   //hashes appropriate data then verifies against depositLog
-  function verifyMintTxParams(bytes data) public returns (uint8) {
-    assert(data.slice(0,10).equal(mintSignature));
-    // return depositLog[keccak256(data.slice(10, 266))];
-  }
+  // function verifyMintTxParams(bytes data) public returns (uint8) {
+  //   assert(data.slice(0,10).equal(mintSignature));
+  //   // return depositLog[keccak256(data.slice(10, 266))];
+  // }
 
   //NEEDS TESTING
-  function parseXYZ(bytes data) public returns (uint X, address Y, uint Z, uint txNonce) {
-    require(data.slice(0,10).equal(mintSignature));
-    X = data.slice(10, 74).toUint(0);
-    Y = data.slice(74, 138).toAddress(0);
-    Z = data.slice(138, 202).toUint(0);
-    txNonce = data.slice(202, 266).toUint(0);
-    return (X, Y, Z, txNonce);
+  // function parseXYZ(bytes data) public returns (uint X, address Y, uint Z, uint txNonce) {
+  //   require(data.slice(0,10).equal(mintSignature));
+  //   X = data.slice(10, 74).toUint(0);
+  //   Y = data.slice(74, 138).toAddress(0);
+  //   Z = data.slice(138, 202).toUint(0);
+  //   txNonce = data.slice(202, 266).toUint(0);
+  //   return (X, Y, Z, txNonce);
+  // }
+
+  event Test(bytes signature, bytes firstArg);
+
+
+  function parseData(bytes data, uint256 i) internal returns (bytes) {
+    if (i == 0) {
+      return data.slice(0,5);
+    } else {
+      return data.slice(5 + i * 32,32);
+    }
   }
 
-  function parseData(bytes data) public returns (bytes[] result) {
-    uint z = (data.length - 10).div(64).add(1);
-    result[0] = data.slice(0,10);
-    for (uint i = 1; i < z; i++) {
-      result[i] = data.slice(10 + (i-1)*64, 10 + (i)*64);
-    }
-    return result;
-  }
 
 
   function bytesToBytes32(bytes b, uint offset) private pure returns (bytes32) {

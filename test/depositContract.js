@@ -41,16 +41,16 @@ contract('Deposit Contract', async (accounts) => {
     await depositContract.setTokenContract(tokenContract);
   })
 
-  it("should parse a transaction", async() => {
-    console.log("HEX STRING", dummyTx.rawTxHex);
+  it("should parse() a transaction", async() => {
+    // console.log("HEX STRING", dummyTx.rawTxHex);
     var actualDummyParams = Wallet.parseTransaction(dummyTx.rawTxHex);
-    console.log("PARAMS:", actualDummyParams);
+    // console.log("PARAMS:", actualDummyParams);
 
     var result = await depositContract.parse(dummyTx.rawTxHex, dummyTx.msgHash);
-    console.log("RESULT: ", result);
+    // console.log("RESULT: ", result);
     var parsedTx = await depositContract.testTx();
-    console.log('transaction:', parsedTx);
-    console.log('account0: ', accounts[0]);
+    // console.log('transaction:', parsedTx);
+    // console.log('account0: ', accounts[0]);
 
     for (var i = 0; i < transactionFields.length; i ++) {
       var parsedTxValue = parsedTx[i];
@@ -67,7 +67,13 @@ contract('Deposit Contract', async (accounts) => {
       } else {
         test = parsedTxValue.toLowerCase() === actualDummyParam.toLowerCase();
       }
-      console.log(test, `for ${transactionFields[i]}: ${parsedTxValue} should be ${actualDummyParam}`);
+      // console.log(test, `for ${transactionFields[i]}: ${parsedTxValue} should be ${actualDummyParam}`);
+      assert(test , `for ${transactionFields[i]}: ${parsedTxValue} should be ${actualDummyParam}`);
     }
   })
+
+  it("should parseData", async () => {
+    var result = await depositContract.parseData(txParams.data);
+    
+  }) 
 })
