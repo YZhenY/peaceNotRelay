@@ -1,5 +1,5 @@
 pragma solidity ^0.4.24;
-pragma experimental ABIEncoderV2;
+// pragma experimental ABIEncoderV2;
 
 import "./SafeMath.sol";
 import "./Ownable.sol";
@@ -118,27 +118,46 @@ contract DepositContract {
   // }
 
   /* Util functions --------------------------------------------------*/
-  function parse(bytes _rawTx, bytes32 _msgHash) public returns (Transaction transaction) {
+  function parse(bytes _rawTx, bytes32 _msgHash) public returns (    
+    uint nonce,
+    uint gasPrice,
+    uint gasLimit,
+    address to,
+    uint value,
+    bytes data,
+    uint8 v,
+    bytes32 r,
+    bytes32 s,
+    address from
+    ) {
     RLP.RLPItem[] memory list = _rawTx.toRLPItem().toList();
     // can potentially insert: if (signedTransaction.length !== 9) { throw new Error('invalid transaction'); } items()
-    transaction.nonce = list[0].toUint();
-    transaction.gasPrice = list[1].toUint();
-    transaction.gasLimit = list[2].toUint();
-    transaction.to = list[3].toAddress();
+    nonce = list[0].toUint();
+    gasPrice = list[1].toUint();
+    gasLimit = list[2].toUint();
+    to = list[3].toAddress();
     if (!list[4].isEmpty()) {
-      transaction.value = list[4].toUint();
+      value = list[4].toUint();
     }
     if (!list[5].isEmpty()) {
-      transaction.data = list[5].toData();
+      data = list[5].toData();
     }
-    transaction.v = uint8(list[6].toUint());
-    transaction.r = list[7].toBytes32(); 
-    transaction.s = list[8].toBytes32();
-    transaction.from = ecrecover(_msgHash, 28, transaction.r, transaction.s);
-    emit Parsed(transaction.data, transaction.to, transaction.from);
-    //for debbugging
-    testTx = transaction;
-    return transaction;
+    v = uint8(list[6].toUint());
+    r = list[7].toBytes32(); 
+    s = list[8].toBytes32();
+    from = ecrecover(_msgHash, 28, r, s);
+    emit Parsed(data, to, from);
+    return (
+    nonce,
+    gasPrice,
+    gasLimit,
+    to,
+    value,
+    data,
+    v,
+    r,
+    s,
+    from);
   }
 
   //hashes appropriate data then verifies against depositLog
