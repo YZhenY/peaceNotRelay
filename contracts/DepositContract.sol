@@ -93,15 +93,38 @@ contract DepositContract {
   // mintHashToAddress
   mapping (uint256 => address) challengeAddress;
 
-  function withdraw(address _to, uint256 _mintHash, bytes _withdrawalTx, bytes _lastTx, bytes _custodianTx) public {
-    // Transaction withdrawalTx = parse(_withdrawalTx);
+
+  //takes in bytes _withdrawalTx, bytes _lastTx, bytes _custodianTx
+  function withdraw(address _to, uint256 _mintHash, bytes _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes) public {
+    //splits bundle into individual rawTxs
+    bytes[] memory rawTxList;
+    uint256 txStartPosition = 0;
+    for (uint i = 0; i < _txLengths.length; i++) {
+      rawTxList[i] = _rawTxBundle.slice(txStartPosition, _txLengths[i]);
+      txStartPosition = txStartPosition.add(_txLengths[i]);
+    }
+
+
+    Transaction memory withdrawalTx; 
+    // // Transaction memory lastTx; 
+    // // Transaction memory custodianTx;
+    (withdrawalTx.nonce,
+    withdrawalTx.gasPrice,
+    withdrawalTx.gasLimit,
+    withdrawalTx.to,
+    withdrawalTx.value,
+    withdrawalTx.data,
+    withdrawalTx.v,
+    withdrawalTx.r,
+    withdrawalTx.s,
+    withdrawalTx.from) = parse(rawTxList[0], _txMsgHashes[0]);
     // Transaction lastTx = parse(_lastTx);
-    // // Transaction custodianTx = parse(_custodianTx);
+    // Transaction custodianTx = parse(_custodianTx);
     // require(withdrawalTx.from == lastTx.to);
-    // //TODO: compare custodianTx and lastTx token_ids here
-    // //start challenge
-    // challengeTime[_mintHash] = now + 10 minutes;
-    // challengeAddress[_mintHash] = _to;
+    //TODO: compare custodianTx and lastTx token_ids here
+    //start challenge
+    challengeTime[_mintHash] = now + 10 minutes;
+    challengeAddress[_mintHash] = _to;
   }
 
 
@@ -118,6 +141,8 @@ contract DepositContract {
   // }
 
   /* Util functions --------------------------------------------------*/
+  // function splitRawTxBundle(bytes _rawTxBundle, uint256 _start, uint256 _end) public returns ()
+
   function parse(bytes _rawTx, bytes32 _msgHash) public returns (    
     uint nonce,
     uint gasPrice,
@@ -175,9 +200,6 @@ contract DepositContract {
   //   txNonce = data.slice(202, 266).toUint(0);
   //   return (X, Y, Z, txNonce);
   // }
-
-  event Test(bytes signature, bytes firstArg);
-
 
   function parseData(bytes data, uint256 i) internal returns (bytes) {
     if (i == 0) {

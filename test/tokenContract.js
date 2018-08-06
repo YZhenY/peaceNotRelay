@@ -58,6 +58,4 @@ contract('Token Contract Test', async (accounts) => {
     assert(result === accounts[2], `token should have transfered to ${accounts[2]}, instead ${result}`);
   })
 
-
-
 })

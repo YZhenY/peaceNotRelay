@@ -94,7 +94,7 @@ contract TokenContract is ERC721BasicToken {
 
 
   
-  event TransferRequest(address from, address to, uint256 _tokenId);
+  event TransferRequest(address indexed from, address indexed to, uint256 indexed _tokenId);
   
   /**
    * @dev Transfers the ownership of a given token ID to another address
