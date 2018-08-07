@@ -108,16 +108,7 @@ contract DepositContract {
     Transaction memory withdrawalTx; 
     // // Transaction memory lastTx; 
     // // Transaction memory custodianTx;
-    (withdrawalTx.nonce,
-    withdrawalTx.gasPrice,
-    withdrawalTx.gasLimit,
-    withdrawalTx.to,
-    withdrawalTx.value,
-    withdrawalTx.data,
-    withdrawalTx.v,
-    withdrawalTx.r,
-    withdrawalTx.s,
-    withdrawalTx.from) = parse(rawTxList[0], _txMsgHashes[0]);
+    (,,,,,,,,,withdrawalTx.from) = parse(rawTxList[0], _txMsgHashes[0]);
     // Transaction lastTx = parse(_lastTx);
     // Transaction custodianTx = parse(_custodianTx);
     // require(withdrawalTx.from == lastTx.to);
