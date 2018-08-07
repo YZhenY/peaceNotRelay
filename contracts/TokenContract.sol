@@ -49,7 +49,7 @@ contract TokenContract is ERC721BasicToken {
 
   event Mint(uint256 amount, address indexed depositedTo, uint256 nonce, bytes32 mintHash);
   event Challenge(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber);
-  event ChallangeResolved(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber, bytes signedTx); 
+  event ChallangeResolved(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber, bytes signedTx);
   event Refund(address indexed withdrawer, uint256 amount, uint256 indexed blockNumber);
   event Withdraw(uint256 tokenId);
   event Parsed(bytes data, address to, address from);
@@ -93,9 +93,9 @@ contract TokenContract is ERC721BasicToken {
   mapping (uint256 => address) public custodianApproval;
 
 
-  
+
   event TransferRequest(address indexed from, address indexed to, uint256 indexed _tokenId);
-  
+
   /**
    * @dev Transfers the ownership of a given token ID to another address
    * Usage of this method is discouraged, use `safeTransferFrom` whenever possible
@@ -104,7 +104,7 @@ contract TokenContract is ERC721BasicToken {
    * @param _to address to receive the ownership of the given token ID
    * @param _tokenId uint256 ID of the token to be transferred
   */
-  function transferFrom(
+  function transferFromTokenContract(
     address _from,
     address _to,
     uint256 _tokenId
@@ -133,7 +133,7 @@ contract TokenContract is ERC721BasicToken {
 
   function revertTransfer(uint256 _tokenId) public {
     require(isApprovedOrOwner(msg.sender, _tokenId));
-    
+
     clearCustodianApproval(_tokenId);
   }
 
@@ -147,7 +147,7 @@ contract TokenContract is ERC721BasicToken {
     }
   }
 
-  
+
 
 
   /* Util functions --------------------------------------------------*/
@@ -165,7 +165,7 @@ contract TokenContract is ERC721BasicToken {
   //     transaction.data = list[5].toData();
   //   }
   //   transaction.v = uint8(list[6].toUint());
-  //   transaction.r = list[7].toBytes32(); 
+  //   transaction.r = list[7].toBytes32();
   //   transaction.s = list[8].toBytes32();
   //   transaction.from = ecrecover(msgHash, 28, transaction.r, transaction.s);
   //   emit Parsed(transaction.data, transaction.to, transaction.from);
