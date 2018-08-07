@@ -22,6 +22,7 @@
   "homepage": "https://github.com/YZhenY/peaceNotRelay#readme",
   "dependencies": {
     "bignumber.js": "^7.2.1",
+    "bluebird": "^3.5.1",
     "ethers": "^3.0.25",
     "truffle-core": "^4.1.13",
     "truffle-hdwallet-provider": "0.0.5",

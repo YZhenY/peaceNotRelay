@@ -21,7 +21,7 @@ contract DepositContract {
   uint256 depositCap;
   uint256 depositedAmount;
   mapping (uint256 => uint256) public mintHashToAmount;
-
+  mapping (uint256 => address) public mintHashToMinter;
 
   struct Transaction {
     uint nonce;
@@ -58,7 +58,7 @@ contract DepositContract {
     }
   }
   
-  event Deposit(address indexed depositer, uint256 amount, uint256 mintHash);
+  event Deposit(address indexed depositer, uint256 amount, uint256 mintHash, address minter);
   event Challenge(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber);
   event ChallangeResolved(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber, bytes signedTx); 
   event Refund(address indexed withdrawer, uint256 amount, uint256 indexed blockNumber);
@@ -82,35 +82,44 @@ contract DepositContract {
     contractState = "staked";
   }
 
-  function deposit(uint256 _mintHash) payable public {
+  function deposit(uint256 _mintHash, address _minter) payable public {
     depositedAmount += msg.value;
     mintHashToAmount[_mintHash] = mintHashToAmount[_mintHash].add(msg.value);
-    emit Deposit(msg.sender, msg.value, _mintHash);
+    mintHashToMinter[_mintHash] = _minter;
+    emit Deposit(msg.sender, msg.value, _mintHash, _minter);
   }
 
   // mintHashToTimestamp
   mapping (uint256 => uint256) challengeTime;
   // mintHashToAddress
   mapping (uint256 => address) challengeAddress;
+  //mintToStake 
+  mapping (uint256 => uint256) challengeStake;
+  //mintToNonce/depth
+  mapping (uint256 => uint256) challengeNonce;
 
 
   //takes in bytes _withdrawalTx, bytes _lastTx, bytes _custodianTx
-  function withdraw(address _to, uint256 _mintHash, bytes _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes) public {
+  function withdraw(address _to, uint256 _mintHash, bytes _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes, uint256 _declaredNonce) payable public {
+    // TODO: check amount to stake, decern challenge time
+
     //splits bundle into individual rawTxs
-    bytes[] memory rawTxList;
-    uint256 txStartPosition = 0;
-    for (uint i = 0; i < _txLengths.length; i++) {
-      rawTxList[i] = _rawTxBundle.slice(txStartPosition, _txLengths[i]);
-      txStartPosition = txStartPosition.add(_txLengths[i]);
-    }
+    bytes[] rawTxList;
+    // uint256 txStartPosition = 0;
+    // for (uint i = 0; i < _txLengths.length; i++) {
+    //   rawTxList[i] = _rawTxBundle.slice(txStartPosition, _txLengths[i]);
+    //   txStartPosition = txStartPosition.add(_txLengths[i]);
+    // }
+
+    splitTxBundle(_rawTxBundle, _txLengths, rawTxList);
 
     RLP.RLPItem[] memory lastTx = rawTxList[1].toRLPItem().toList();
     RLP.RLPItem[] memory custodianTx = rawTxList[2].toRLPItem().toList();
     require(ecrecovery(_txMsgHashes[0], rawTxList[0]) == lastTx[3].toAddress(), "WithdrawalTx not signed by lastTx receipient");
 
-     //compare custodianTx and lastTx token_ids 
-    require(!lastTx[5].isEmpty(), "No Data Fields in lastTx");
-    require(!custodianTx[5].isEmpty(), "No Data Fields in custodianTx");
+    //compare custodianTx and lastTx token_ids 
+    require(!lastTx[5].isEmpty(), "No Data field in lastTx");
+    require(!custodianTx[5].isEmpty(), "No Data field in custodianTx");
     bytes4 lastTxFuncSig = bytesToBytes4(parseData(lastTx[5].toData(), 0), 0);
     bytes4 custodianTxFuncSig = bytesToBytes4(parseData(custodianTx[5].toData(), 0), 0);
     require(lastTxFuncSig == transferFromSignature, "lastTx is not transferFrom function");
@@ -119,11 +128,42 @@ contract DepositContract {
 
     //start challenge
     challengeTime[_mintHash] = now + 10 minutes;
+    challengeNonce[_mintHash] = _declaredNonce;
     challengeAddress[_mintHash] = _to;
+    challengeStake[_mintHash] = msg.value;
   }
 
+  //honest withdrawal
+  function claim(uint256 _mintHash) public {
+    require(challengeTime[_mintHash] != 0);
+    require(challengeTime[_mintHash] < now);
+    
+    challengeAddress[_mintHash].send((mintHashToAmount[_mintHash] ) + challengeStake[_mintHash]);
 
-  Transaction public testTx;
+    mintHashToAmount[_mintHash] = 0;
+    resetChallenge(_mintHash);
+  }
+
+  function challengeWithFutureCustody(address _to, uint256 _mintHash, bytes _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes) public { 
+    require(challengeTime[_mintHash] != 0);
+    require(challengeTime[_mintHash] > now);
+    
+    
+  }
+
+  function splitTxBundle(bytes _rawTxBundle, uint256[] _txLengths, bytes[] storage _rawTxList) internal {
+    uint256 txStartPosition = 0;
+    for (uint i = 0; i < _txLengths.length; i++) {
+      _rawTxList[i] = _rawTxBundle.slice(txStartPosition, _txLengths[i]);
+      txStartPosition = txStartPosition.add(_txLengths[i]);
+    }
+  }
+
+  function resetChallenge(uint256 _mintHash) internal {
+    challengeStake[_mintHash] = 0;
+    challengeAddress[_mintHash] = 0;
+    challengeTime[_mintHash] = 0; 
+  }
 
   //ADD ONLY WHEN STAKED
   // function submitFraud(bytes rawTx, bytes32 msgHash) public {
@@ -137,6 +177,7 @@ contract DepositContract {
 
   /* Util functions --------------------------------------------------*/
   // function splitRawTxBundle(bytes _rawTxBundle, uint256 _start, uint256 _end) public returns ()
+  Transaction public testTx;
 
   function parse(bytes _rawTx, bytes32 _msgHash) public returns (    
     uint nonce,

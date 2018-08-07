@@ -1,10 +1,11 @@
-var DepositContract = artifacts.require("DepositContract");
+var DepositContract = artifacts.require("DepositContractMock.sol");
 var testHelpers = require('../utils/testHelpers')(web3);
 var dummyTx = require('../utils/dummyRawTx.json');
 var web3Utils = require('web3').utils;
 const BN = web3Utils.BN;
 var ethers = require('ethers');
 var Wallet = ethers.Wallet;
+var Promise = require("bluebird");
 const EthereumTx = require('ethereumjs-tx')
 const privateKey = Buffer.from('2387a5730d394074ed23d1cb79c3fa2c4e11832439cdd40104ee6a7da7c1cfb9', 'hex')
 
@@ -18,6 +19,7 @@ var transactionFields = [ 'nonce',
 'r',
 's',
 'from' ]
+
 
 const txParams = {
   nonce: '0x00',
@@ -33,6 +35,8 @@ console.log(tx);
 const serializedTx = tx.serialize()
 console.log(serializedTx.toString());
 
+var dummyMintHash = new BN('0xd9f48f06cfd7a657aec67d94e17e2e921df7ef2fa4d29ff2c0ec6bb3271a28dc');
+
 var tokenContract = "0xc40b249a7cde0fca8fadcf4eba8dee933b460bd7";
 
 contract('Deposit Contract', async (accounts) => {
@@ -41,39 +45,39 @@ contract('Deposit Contract', async (accounts) => {
     await depositContract.setTokenContract(tokenContract);
   })
 
-  it("should parse() a transaction", async() => {
-    // console.log("HEX STRING", dummyTx.rawTxHex);
-    var actualDummyParams = Wallet.parseTransaction(dummyTx.rawTxHex);
-    // console.log("PARAMS:", actualDummyParams);
+  // it("should parse() a transaction", async() => {
+  //   // console.log("HEX STRING", dummyTx.rawTxHex);
+  //   var actualDummyParams = Wallet.parseTransaction(dummyTx.rawTxHex);
+  //   // console.log("PARAMS:", actualDummyParams);
 
-    var result = await depositContract.parse(dummyTx.rawTxHex, dummyTx.msgHash);
-    // console.log("RESULT: ", result);
-    var parsedTx = await depositContract.testTx();
-    // console.log('transaction:', parsedTx);
-    // console.log('account0: ', accounts[0]);
+  //   var result = await depositContract.parse(dummyTx.rawTxHex, dummyTx.msgHash);
+  //   // console.log("RESULT: ", result);
+  //   var parsedTx = await depositContract.testTx();
+  //   // console.log('transaction:', parsedTx);
+  //   // console.log('account0: ', accounts[0]);
 
-    for (var i = 0; i < transactionFields.length; i ++) {
-      var parsedTxValue = parsedTx[i];
-      var actualDummyParam = actualDummyParams[transactionFields[i]];
-      var test = false;
-      if (parsedTxValue.toNumber !== undefined) {
-        parsedTxValue = new BN(parsedTxValue.toNumber());
-        if (actualDummyParam._bn === undefined || actualDummyParam._bn.toNumber === undefined) {
-          actualDummyParam = new BN (actualDummyParam);
-        } else {
-          actualDummyParam = actualDummyParam._bn;
-        }
-        test = parsedTxValue.eq(actualDummyParam);
-      } else {
-        test = parsedTxValue.toLowerCase() === actualDummyParam.toLowerCase();
-      }
-      // console.log(test, `for ${transactionFields[i]}: ${parsedTxValue} should be ${actualDummyParam}`);
-      assert(test , `for ${transactionFields[i]}: ${parsedTxValue} should be ${actualDummyParam}`);
-    }
-  })
+  //   for (var i = 0; i < transactionFields.length; i ++) {
+  //     var parsedTxValue = parsedTx[i];
+  //     var actualDummyParam = actualDummyParams[transactionFields[i]];
+  //     var test = false;
+  //     if (parsedTxValue.toNumber !== undefined) {
+  //       parsedTxValue = new BN(parsedTxValue.toNumber());
+  //       if (actualDummyParam._bn === undefined || actualDummyParam._bn.toNumber === undefined) {
+  //         actualDummyParam = new BN (actualDummyParam);
+  //       } else {
+  //         actualDummyParam = actualDummyParam._bn;
+  //       }
+  //       test = parsedTxValue.eq(actualDummyParam);
+  //     } else {
+  //       test = parsedTxValue.toLowerCase() === actualDummyParam.toLowerCase();
+  //     }
+  //     // console.log(test, `for ${transactionFields[i]}: ${parsedTxValue} should be ${actualDummyParam}`);
+  //     assert(test , `for ${transactionFields[i]}: ${parsedTxValue} should be ${actualDummyParam}`);
+  //   }
+  // })
 
-  it("should parseData", async () => {
-    var result = await depositContract.parseData(txParams.data);
-    
+  it("should  deposit()", async () => {
+    var result = await depositContract.deposit(dummyMintHash, 10);
+    console.log(result);
   }) 
 })
