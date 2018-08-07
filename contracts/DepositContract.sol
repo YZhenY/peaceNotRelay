@@ -104,15 +104,19 @@ contract DepositContract {
       txStartPosition = txStartPosition.add(_txLengths[i]);
     }
 
+    RLP.RLPItem[] memory lastTx = rawTxList[1].toRLPItem().toList();
+    RLP.RLPItem[] memory custodianTx = rawTxList[2].toRLPItem().toList();
+    require(ecrecovery(_txMsgHashes[0], rawTxList[0]) == lastTx[3].toAddress(), "WithdrawalTx not signed by lastTx receipient");
 
-    Transaction memory withdrawalTx; 
-    // // Transaction memory lastTx; 
-    // // Transaction memory custodianTx;
-    (,,,,,,,,,withdrawalTx.from) = parse(rawTxList[0], _txMsgHashes[0]);
-    // Transaction lastTx = parse(_lastTx);
-    // Transaction custodianTx = parse(_custodianTx);
-    // require(withdrawalTx.from == lastTx.to);
-    //TODO: compare custodianTx and lastTx token_ids here
+     //compare custodianTx and lastTx token_ids 
+    require(!lastTx[5].isEmpty(), "No Data Fields in lastTx");
+    require(!custodianTx[5].isEmpty(), "No Data Fields in custodianTx");
+    bytes4 lastTxFuncSig = bytesToBytes4(parseData(lastTx[5].toData(), 0), 0);
+    bytes4 custodianTxFuncSig = bytesToBytes4(parseData(custodianTx[5].toData(), 0), 0);
+    require(lastTxFuncSig == transferFromSignature, "lastTx is not transferFrom function");
+    require(custodianTxFuncSig == custodianApproveSignature, "custodianTx is not custodianApproval");
+    require(parseData(lastTx[5].toData(),3).equal(parseData(custodianTx[5].toData(),1)), "token_ids do not match");
+
     //start challenge
     challengeTime[_mintHash] = now + 10 minutes;
     challengeAddress[_mintHash] = _to;
@@ -206,6 +210,14 @@ contract DepositContract {
     bytes32 out;
     for (uint i = 0; i < 32; i++) {
       out |= bytes32(b[offset + i] & 0xFF) >> (i * 8);
+    }
+    return out;
+  }
+
+  function bytesToBytes4(bytes b, uint offset) private pure returns (bytes4) {
+    bytes4 out;
+    for (uint i = 0; i < 4; i++) {
+      out |= bytes4(b[offset + i] & 0xFF) >> (i * 8);
     }
     return out;
   }
