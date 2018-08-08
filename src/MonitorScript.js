@@ -28,39 +28,74 @@ var parsed = JSON.parse(fs.readFileSync(jsonFile));
 var bytecodeFile = '../Contracts/tokenContract.txt';
 var bytecode = fs.readFileSync(bytecodeFile, "utf-8");
 
+var tokenContract = new ethers.Contract(tokenContractAddress, parsed, wallet);
+
 // var deployTransaction = ethers.Contract.getDeployTransaction(bytecode, parsed, '0xC33Bdb8051D6d2002c0D80A1Dd23A1c9d9FC26E4');
 // var sendPromise = wallet.sendTransaction(deployTransaction);
 // sendPromise.then(function(transaction) {
 //     console.log(transaction);
 // });
 
-var tokenContract = new ethers.Contract(tokenContractAddress, parsed, wallet);
-// async function mintCall() {
-//     var result = await tokenContract.mint(10000, '0xF22999d07Bf99C75112C292AB1B399423Cb770ce');
-//     var transactionHash = (result['hash'])
-// 	var transactionReceipt = provider.getTransactionReceipt(transactionHash).then(function(transactionReceipt) {
-// 	    console.log(transactionReceipt);
-// 	});
-// }
+//--------------------------------------------------------------------------------
+//Minting, transferring, and interacting with TokenContract
 
-// mintCall()
+async function mintCall() {
+    var result = await tokenContract.mint(10000, '0xC33Bdb8051D6d2002c0D80A1Dd23A1c9d9FC26E4');
+    var transactionHash = (result['hash']);
+    console.log(transactionHash);
+}
 
-// var bn = BigNumber('93118777076508557655027028791478819579761877397809444865514027257674540416586')
-// console.log(bn)
-// async function ownerOfCall() {
-// 	var result = await tokenContract.ownerOf('93118777076508557655027028791478819579761877397809444865514027257674540416586');
-//     console.log(result)
-// }
-// ownerOfCall()
+async function getTransactionReceipt(transactionHash) {
+	var transactionReceipt = await provider.getTransactionReceipt(transactionHash);
+	console.log(transactionReceipt);
+}
 
+async function ownerOfCall(tokenID) {
+	var result = await tokenContract.ownerOf(tokenID);
+    console.log(result)
+}
 
 async function transferCall() {
-    var result = await tokenContract.transferFromTokenContract('0xC33Bdb8051D6d2002c0D80A1Dd23A1c9d9FC26E4',
-    	'0x754eC60c051dF8524F9775712f8e46f36293Da9d', 
-    	'0xcddf5c2ec44aa57a0afb3680db9aea2ea0e360e8a01cb86976fefd34ddca7e4a'
-    	// '93118777076508557655027028791478819579761877397809444865514027257674540416586'
+    var result = await tokenContract.transferFromTokenContract(
+    	'0x754eC60c051dF8524F9775712f8e46f36293Da9d',
+    	'0xC33Bdb8051D6d2002c0D80A1Dd23A1c9d9FC26E4', 
+    	'68420091402644995921492871103118945056506363385934839950840550634224801461946'
     	);
     console.log(result)
 }
 
-transferCall()
+//--------------------------------------------------------------------------------
+//Minting, transferring, and interacting with TokenContract
+async function transferHistory(tokenID) {
+	var filter = {
+		fromBlock: 3788780,
+		toBlock: 'latest',
+		topics: [
+		'0xb22781db7a1c1a87b86b7215e93e2ad8791bb8cc984291af99060086f14f0b4a',
+		null,null,
+		tokenID
+		]
+	}
+	var transferEvents = provider.getLogs(filter)
+	transferEvents.then(function(result){
+	   console.log(result);
+	});
+
+ownerOfCall('68420091402644995921492871103118945056506363385934839950840550634224801461946')
+transferHistory('0x9744663e9ce4a436cbd897d62862050ac115b19e8069f51b444cafc7b756b6ba')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

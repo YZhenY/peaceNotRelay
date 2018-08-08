@@ -1,7 +1,5 @@
 var TokenContract = artifacts.require("TokenContract");
 
-
-
 contract('Token Contract Test', async (accounts) => {
 
   beforeEach(async () => {
