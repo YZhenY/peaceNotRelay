@@ -132,9 +132,12 @@ contract TokenContract is ERC721BasicToken {
   }
 
   function revertTransfer(uint256 _tokenId) public {
-    require(isApprovedOrOwner(msg.sender, _tokenId));
-    
+    require(isApprovedOrOwner(msg.sender, _tokenId), "no approval/ not owner");
     clearCustodianApproval(_tokenId);
+  }
+
+  function transferRequest(uint256 _tokenId) public view returns(address) {
+    return custodianApproval[_tokenId];
   }
 
   /**

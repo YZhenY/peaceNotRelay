@@ -8,6 +8,7 @@
     "migrateRINK": "NETWORK=RINK truffle migrate --network rinkeby",
     "migrateDev1": "NETWORK=DEV1 truffle migrate --network development1",
     "migrateDev2": "NETWORK=DEV2 truffle migrate --network development2",
+    "ganache": "ganache-cli -p 7545 -s=something",
     "test": ""
   },
   "repository": {
@@ -24,6 +25,7 @@
     "bignumber.js": "^7.2.1",
     "bluebird": "^3.5.1",
     "ethers": "^3.0.25",
+    "rlp": "^2.1.0",
     "truffle-core": "^4.1.13",
     "truffle-hdwallet-provider": "0.0.5",
     "web3": "^1.0.0-beta.34"

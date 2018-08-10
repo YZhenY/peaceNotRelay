@@ -105,12 +105,6 @@ contract DepositContract {
 
     //splits bundle into individual rawTxs
     bytes[] rawTxList;
-    // uint256 txStartPosition = 0;
-    // for (uint i = 0; i < _txLengths.length; i++) {
-    //   rawTxList[i] = _rawTxBundle.slice(txStartPosition, _txLengths[i]);
-    //   txStartPosition = txStartPosition.add(_txLengths[i]);
-    // }
-
     splitTxBundle(_rawTxBundle, _txLengths, rawTxList);
 
     RLP.RLPItem[] memory lastTx = rawTxList[1].toRLPItem().toList();
