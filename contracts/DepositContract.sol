@@ -99,7 +99,17 @@ contract DepositContract {
   mapping (uint256 => uint256) challengeNonce;
 
 
-  //takes in bytes _withdrawalTx, bytes _lastTx, bytes _custodianTx
+  /**
+   * @dev Initiates a withdrawal process. Starts the challenge period 
+   * Requires the msg sender to stake a payment (payable function)
+   // TODO: check amount to stake, decern challenge time
+   * @param _to address to send withdrawal 
+   * @param _mintHash uint256 ID of token on TokenContract
+   * @param _rawTxBundle bytes bundle that takes in concatination of bytes _withdrawalTx, bytes _lastTx, bytes _custodianTx
+   * @param _txLengths lengths of transactions in rawTxBundle, used for efficiency purposes
+   * @param _txMsgHashes msghashes of transactions in bundle
+   + @param _delclaredNonce depth of chain of custody from token contract. IMPORTANT TO BE HONEST
+  */
   function withdraw(address _to, uint256 _mintHash, bytes _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes, uint256 _declaredNonce) payable public {
     // TODO: check amount to stake, decern challenge time
 
