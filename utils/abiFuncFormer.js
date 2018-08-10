@@ -20,3 +20,14 @@ module.exports.funcSigFormer = (funcString) => {
   return bytes32.slice(0,10);
 }
 
+  /**
+   * @dev Initiates a withdrawal process. Starts the challenge period 
+   * Requires the msg sender to stake a payment (payable function)
+   // TODO: check amount to stake, decern challenge time
+   * @param _to address to send withdrawal 
+   * @param _mintHash uint256 ID of token on TokenContract
+   * @param _rawTxBundle bytes bundle that takes in concatination of bytes _withdrawalTx, bytes _lastTx, bytes _custodianTx
+   * @param _txLengths lengths of transactions in rawTxBundle, used for efficiency purposes
+   * @param _txMsgHashes msghashes of transactions in bundle
+   + @param _declaredNonce depth of chain of custody from token contract. IMPORTANT TO BE HONEST
+  */

@@ -98,7 +98,7 @@ contract DepositContract {
   //mintToNonce/depth
   mapping (uint256 => uint256) challengeNonce;
 
-
+ /*
   /**
    * @dev Initiates a withdrawal process. Starts the challenge period 
    * Requires the msg sender to stake a payment (payable function)
@@ -108,33 +108,36 @@ contract DepositContract {
    * @param _rawTxBundle bytes bundle that takes in concatination of bytes _withdrawalTx, bytes _lastTx, bytes _custodianTx
    * @param _txLengths lengths of transactions in rawTxBundle, used for efficiency purposes
    * @param _txMsgHashes msghashes of transactions in bundle
-   + @param _delclaredNonce depth of chain of custody from token contract. IMPORTANT TO BE HONEST
+   + @param _declaredNonce depth of chain of custody from token contract. IMPORTANT TO BE HONEST
   */
-  function withdraw(address _to, uint256 _mintHash, bytes _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes, uint256 _declaredNonce) payable public {
+
+  // function withdraw(address _to, uint256 _mintHash, bytes _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes, uint256 _declaredNonce) payable external {
+
+  function withdraw(address _to, uint256 _mintHash, bytes _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes, uint256 _declaredNonce) public payable  {
     // TODO: check amount to stake, decern challenge time
 
-    //splits bundle into individual rawTxs
-    bytes[] rawTxList;
-    splitTxBundle(_rawTxBundle, _txLengths, rawTxList);
+    // splits bundle into individual rawTxs
+    // bytes[] rawTxList;
+    // splitTxBundle(_rawTxBundle, _txLengths, rawTxList);
 
-    RLP.RLPItem[] memory lastTx = rawTxList[1].toRLPItem().toList();
-    RLP.RLPItem[] memory custodianTx = rawTxList[2].toRLPItem().toList();
-    require(ecrecovery(_txMsgHashes[0], rawTxList[0]) == lastTx[3].toAddress(), "WithdrawalTx not signed by lastTx receipient");
+    // RLP.RLPItem[] memory lastTx = rawTxList[1].toRLPItem().toList();
+    // RLP.RLPItem[] memory custodianTx = rawTxList[2].toRLPItem().toList();
+    // require(ecrecovery(_txMsgHashes[0], rawTxList[0]) == lastTx[3].toAddress(), "WithdrawalTx not signed by lastTx receipient");
 
-    //compare custodianTx and lastTx token_ids 
-    require(!lastTx[5].isEmpty(), "No Data field in lastTx");
-    require(!custodianTx[5].isEmpty(), "No Data field in custodianTx");
-    bytes4 lastTxFuncSig = bytesToBytes4(parseData(lastTx[5].toData(), 0), 0);
-    bytes4 custodianTxFuncSig = bytesToBytes4(parseData(custodianTx[5].toData(), 0), 0);
-    require(lastTxFuncSig == transferFromSignature, "lastTx is not transferFrom function");
-    require(custodianTxFuncSig == custodianApproveSignature, "custodianTx is not custodianApproval");
-    require(parseData(lastTx[5].toData(),3).equal(parseData(custodianTx[5].toData(),1)), "token_ids do not match");
+    // //compare custodianTx and lastTx token_ids 
+    // require(!lastTx[5].isEmpty(), "No Data field in lastTx");
+    // require(!custodianTx[5].isEmpty(), "No Data field in custodianTx");
+    // bytes4 lastTxFuncSig = bytesToBytes4(parseData(lastTx[5].toData(), 0), 0);
+    // bytes4 custodianTxFuncSig = bytesToBytes4(parseData(custodianTx[5].toData(), 0), 0);
+    // require(lastTxFuncSig == transferFromSignature, "lastTx is not transferFrom function");
+    // require(custodianTxFuncSig == custodianApproveSignature, "custodianTx is not custodianApproval");
+    // require(parseData(lastTx[5].toData(),3).equal(parseData(custodianTx[5].toData(),1)), "token_ids do not match");
 
-    //start challenge
-    challengeTime[_mintHash] = now + 10 minutes;
-    challengeNonce[_mintHash] = _declaredNonce;
-    challengeAddress[_mintHash] = _to;
-    challengeStake[_mintHash] = msg.value;
+    // //start challenge
+    // challengeTime[_mintHash] = now + 10 minutes;
+    // challengeNonce[_mintHash] = _declaredNonce;
+    // challengeAddress[_mintHash] = _to;
+    // challengeStake[_mintHash] = msg.value;
   }
 
   //honest withdrawal

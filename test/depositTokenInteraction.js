@@ -126,8 +126,9 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
     var rawBundle = '0x' + rawWithdrawal.rawTx.toString('hex') + '0x' + rawTransferFrom.rawTx.toString('hex') + '0x' + rawCustodianApprove.rawTx.toString('hex');
     var txLengths = [rawWithdrawal.rawTx.toString('hex').length + 2, rawTransferFrom.rawTx.toString('hex').length + 2, rawCustodianApprove.rawTx.toString('hex').length + 2 ];
     var txMshHashes = [rawWithdrawal.msgHash, rawTransferFrom.msgHash, rawCustodianApprove.msgHash];
-    console.log(accounts[3], mintHash, rawBundle, txLengths, txMshHashes, 1)
-    result = await depositContract.withdraw(accounts[3], mintHash, rawBundle, txLengths, txMshHashes, 1);
+    console.log("LENGTH: ", rawBundle.length)
+    // result = await depositContract.withdraw(accounts[3], mintHash, rawBundle, txLengths, txMshHashes, 1, {value:1000});
+    result = await depositContract.withdraw(accounts[3], mintHash,'test', txLengths, txMshHashes, 1, {value:1000});
     console.log(result);
   })
 })
