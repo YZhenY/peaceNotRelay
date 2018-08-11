@@ -112,32 +112,32 @@ contract DepositContract {
   */
 
   // function withdraw(address _to, uint256 _mintHash, bytes _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes, uint256 _declaredNonce) payable external {
-
-  function withdraw(address _to, uint256 _mintHash, bytes _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes, uint256 _declaredNonce) public payable  {
+  event Test(bytes tx1, bytes tx2, bytes tx3);
+  event Trace(bytes out);
+  event TraceAddress(address out);
+  event Trace32(bytes32 out);
+  function withdraw(address _to, uint256 _mintHash, bytes32[] _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes, uint256 _declaredNonce) public payable  {
     // TODO: check amount to stake, decern challenge time
 
     // splits bundle into individual rawTxs
-    // bytes[] rawTxList;
-    // splitTxBundle(_rawTxBundle, _txLengths, rawTxList);
+    bytes[] rawTxList;
+    splitTxBundle(_rawTxBundle, _txLengths, rawTxList);
 
-    // RLP.RLPItem[] memory lastTx = rawTxList[1].toRLPItem().toList();
-    // RLP.RLPItem[] memory custodianTx = rawTxList[2].toRLPItem().toList();
-    // require(ecrecovery(_txMsgHashes[0], rawTxList[0]) == lastTx[3].toAddress(), "WithdrawalTx not signed by lastTx receipient");
+    RLP.RLPItem[] memory withdrawTx = rawTxList[0].toRLPItem().toList();
+    RLP.RLPItem[] memory lastTx = rawTxList[1].toRLPItem().toList();
+    RLP.RLPItem[] memory custodianTx = rawTxList[2].toRLPItem().toList();
+    bytes4 lastTxFuncSig = bytesToBytes4(parseData(lastTx[5].toData(), 0), 0);
+    bytes4 custodianTxFuncSig = bytesToBytes4(parseData(custodianTx[5].toData(), 0), 0);
+    require(lastTxFuncSig == transferFromSignature, "lastTx is not transferFrom function");
+    require(custodianTxFuncSig == custodianApproveSignature, "custodianTx is not custodianApproval");
+    require(parseData(lastTx[5].toData(), 2).toAddress(12) == ecrecover(_txMsgHashes[0], uint8(withdrawTx[6].toUint()), withdrawTx[7].toBytes32(), withdrawTx[8].toBytes32()), "WithdrawalTx not signed by lastTx receipient");
+    require(parseData(lastTx[5].toData(),3).equal(parseData(custodianTx[5].toData(),1)), "token_ids do not match");
 
-    // //compare custodianTx and lastTx token_ids 
-    // require(!lastTx[5].isEmpty(), "No Data field in lastTx");
-    // require(!custodianTx[5].isEmpty(), "No Data field in custodianTx");
-    // bytes4 lastTxFuncSig = bytesToBytes4(parseData(lastTx[5].toData(), 0), 0);
-    // bytes4 custodianTxFuncSig = bytesToBytes4(parseData(custodianTx[5].toData(), 0), 0);
-    // require(lastTxFuncSig == transferFromSignature, "lastTx is not transferFrom function");
-    // require(custodianTxFuncSig == custodianApproveSignature, "custodianTx is not custodianApproval");
-    // require(parseData(lastTx[5].toData(),3).equal(parseData(custodianTx[5].toData(),1)), "token_ids do not match");
-
-    // //start challenge
-    // challengeTime[_mintHash] = now + 10 minutes;
-    // challengeNonce[_mintHash] = _declaredNonce;
-    // challengeAddress[_mintHash] = _to;
-    // challengeStake[_mintHash] = msg.value;
+    //start challenge
+    challengeTime[_mintHash] = now + 10 minutes;
+    challengeNonce[_mintHash] = _declaredNonce;
+    challengeAddress[_mintHash] = _to;
+    challengeStake[_mintHash] = msg.value;
   }
 
   //honest withdrawal
@@ -158,12 +158,27 @@ contract DepositContract {
     
   }
 
-  function splitTxBundle(bytes _rawTxBundle, uint256[] _txLengths, bytes[] storage _rawTxList) internal {
+  function splitTxBundle(bytes32[] _rawTxBundle, uint256[] _txLengths, bytes[] storage _rawTxList) internal {
     uint256 txStartPosition = 0;
     for (uint i = 0; i < _txLengths.length; i++) {
-      _rawTxList[i] = _rawTxBundle.slice(txStartPosition, _txLengths[i]);
+      _rawTxList[i] = sliceBytes32Arr(_rawTxBundle, txStartPosition, _txLengths[i]);
       txStartPosition = txStartPosition.add(_txLengths[i]);
+      txStartPosition = txStartPosition + (64 - txStartPosition % 64);
     }
+  }
+
+
+  //TODO: MAKE MORE EFFICENT 
+  function sliceBytes32Arr(bytes32[] _bytes32ArrBundle, uint256 _startPosition, uint256 _length) internal returns (bytes) {
+    bytes memory out;
+    uint256 i = _startPosition.div(64);
+    uint256 endPosition = _startPosition.add(_length);
+    uint256 z = endPosition.div(64);
+    for (i ; i < z; i++) {
+      out = out.concat(bytes32ToBytes(_bytes32ArrBundle[i]));
+    }
+    out = out.concat(bytes32ToBytes(_bytes32ArrBundle[z]).slice(0, (endPosition % 64 / 2) - 1));
+    return out;
   }
 
   function resetChallenge(uint256 _mintHash) internal {
@@ -248,8 +263,14 @@ contract DepositContract {
     if (i == 0) {
       return data.slice(0,5);
     } else {
-      return data.slice(5 + i * 32,32);
+      return data.slice(4 + ((i-1) * 32), 32);
     }
+  }
+
+  //https://ethereum.stackexchange.com/questions/40920/convert-bytes32-to-bytes
+  //TODO: Look for more efficient method
+  function bytes32ToBytes(bytes32 _data) internal pure returns (bytes) {
+    return abi.encodePacked(_data);
   }
 
 

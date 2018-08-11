@@ -123,15 +123,38 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
 
     //bundle takes in bytes _withdrawalTx, bytes _lastTx, bytes _custodianTx
     //address _to, uint256 _mintHash, bytes _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes, uint256 _declaredNonce
-    var rawBundle = '0x' + rawWithdrawal.rawTx.toString('hex') + '0x' + rawTransferFrom.rawTx.toString('hex') + '0x' + rawCustodianApprove.rawTx.toString('hex');
+    var bytes32Bundle = [];
+    console.log("RAW: ", [rawWithdrawal.rawTx.toString('hex'), rawTransferFrom.rawTx.toString('hex'), rawCustodianApprove.rawTx.toString('hex')]);
+    [rawWithdrawal.rawTx.toString('hex'), rawTransferFrom.rawTx.toString('hex'), rawCustodianApprove.rawTx.toString('hex')].forEach((value) => {
+      var tempBundle = toBytes32BundleArr(value);
+      tempBundle.forEach(value => bytes32Bundle.push(value));
+    })
     var txLengths = [rawWithdrawal.rawTx.toString('hex').length + 2, rawTransferFrom.rawTx.toString('hex').length + 2, rawCustodianApprove.rawTx.toString('hex').length + 2 ];
-    var txMshHashes = [rawWithdrawal.msgHash, rawTransferFrom.msgHash, rawCustodianApprove.msgHash];
-    console.log("LENGTH: ", rawBundle.length)
-    // result = await depositContract.withdraw(accounts[3], mintHash, rawBundle, txLengths, txMshHashes, 1, {value:1000});
-    result = await depositContract.withdraw(accounts[3], mintHash,'test', txLengths, txMshHashes, 1, {value:1000});
-    console.log(result);
+    var txMsgHashes = [rawWithdrawal.msgHash, rawTransferFrom.msgHash, rawCustodianApprove.msgHash];
+    console.log("BUNDLE: ", bytes32Bundle);
+    console.log("txLENGHTS: ", txLengths);
+    console.log("HashShit: ", txMsgHashes);
+    console.log()
+    result = await depositContract.withdraw(accounts[3], mintHash, bytes32Bundle, txLengths, txMsgHashes, 1, {value:1000});
+
+
+    for (var i = 0; i < result.logs.length; i ++) {
+      console.log(`${result.logs[i].event}: `,result.logs[i].args )
+    }
+    console.log(accounts[3]);
   })
 })
+
+var toBytes32BundleArr = function (rawBundle) {
+  var bytes32Bundle = [];
+  for (var i = 0; i < rawBundle.length; i ++) {
+    bytes32Bundle[Math.floor(i / 64)] = (bytes32Bundle[Math.floor(i / 64)]) ? bytes32Bundle[Math.floor(i / 64)] + rawBundle[i] : rawBundle[i] ;
+  }
+  bytes32Bundle.forEach((value, index) => {
+    bytes32Bundle[index] = '0x' + bytes32Bundle[index];
+  })
+  return bytes32Bundle;
+}
 
 var generateRawTxAndMsgHash = async function(pubK, privK, to, value, data) {
   var txParams = {};
