@@ -128,6 +128,9 @@ contract DepositContract {
     RLP.RLPItem[] memory custodianTx = rawTxList[2].toRLPItem().toList();
     bytes4 lastTxFuncSig = bytesToBytes4(parseData(lastTx[5].toData(), 0), 0);
     bytes4 custodianTxFuncSig = bytesToBytes4(parseData(custodianTx[5].toData(), 0), 0);
+    require(withdrawTx[3].toAddress() == tokenContract);
+    require(lastTx[3].toAddress() == tokenContract);
+    require(custodianTx[3].toAddress() == tokenContract);
     require(lastTxFuncSig == transferFromSignature, "lastTx is not transferFrom function");
     require(custodianTxFuncSig == custodianApproveSignature, "custodianTx is not custodianApproval");
     require(parseData(lastTx[5].toData(), 2).toAddress(12) == ecrecover(_txMsgHashes[0], uint8(withdrawTx[6].toUint()), withdrawTx[7].toBytes32(), withdrawTx[8].toBytes32()), "WithdrawalTx not signed by lastTx receipient");
