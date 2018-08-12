@@ -274,12 +274,15 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
     var withdrawArgs = formBundleLengthsHashes([rawWithdrawal, rawTransferFrom, rawCustodianApprove]);
     result = await depositContract.withdraw(accounts[4], mintHash, withdrawArgs.bytes32Bundle, withdrawArgs.txLengths, withdrawArgs.txMsgHashes, 1, {value:stakeValue});
 
-    // bytes32Bundle = txsToBytes32BundleArr([rawTransferFrom2.rawTx.toString('hex'), rawCustodianApprove2.rawTx.toString('hex')]);
-    // txLengths = [rawWithdrawal.rawTx.toString('hex').length + 2, rawTransferFrom.rawTx.toString('hex').length + 2, rawCustodianApprove.rawTx.toString('hex').length + 2 ];
-    // txMsgHashes = [rawWithdrawal.msgHash, rawTransferFrom.msgHash, rawCustodianApprove.msgHash];
-    // result = await depositContract.challengeWithFutureCustody(account[5], mintHash, bytes32Bundle, txLengths, txMsgHashes,  )
-    
-    
+    var startAmount = await web3.eth.getBalance(accounts[5]);    
+
+    var challengeArgs = formBundleLengthsHashes([rawTransferFrom2, rawCustodianApprove2]);
+    result = await depositContract.challengeWithFutureCustody(accounts[5], mintHash, challengeArgs.bytes32Bundle, challengeArgs.txLengths, challengeArgs.txMsgHashes);
+
+    var newBalance = await web3.eth.getBalance(accounts[5]);
+    var withdrawnAmount = newBalance.sub(startAmount);
+    assert(withdrawnAmount.eq(stakeValue), `should withdraw ${tokenValue + stakeValue} , instead ${withdrawnAmount}`);
+
   })
 })
 
