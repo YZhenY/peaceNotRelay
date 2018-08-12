@@ -167,23 +167,15 @@ contract DepositContract {
     bytes[] rawTxList;
     splitTxBundle(_rawTxBundle, _txLengths, rawTxList);
 
-    // RLP.RLPItem[] memory lastTx = rawTxList[0].toRLPItem().toList();
-    // RLP.RLPItem[] memory custodianTx = rawTxList[1].toRLPItem().toList();
-    // bytes4 lastTxFuncSig = bytesToBytes4(parseData(lastTx[5].toData(), 0), 0);
-    // bytes4 custodianTxFuncSig = bytesToBytes4(parseData(custodianTx[5].toData(), 0), 0);
-    // address lastCustody = parseData(lastTx[5].toData(), 2).toAddress(12);
+    RLP.RLPItem[] memory transferTx = rawTxList[0].toRLPItem().toList();
+    RLP.RLPItem[] memory custodianTx = rawTxList[1].toRLPItem().toList();
 
-    // require(lastTx[3].toAddress() == tokenContract);
-    // require(custodianTx[3].toAddress() == tokenContract);
-    // require(lastTxFuncSig == transferFromSignature, "lastTx is not transferFrom function");
-    // require(custodianTxFuncSig == custodianApproveSignature, "custodianTx is not custodianApproval");
-    // require(custodianETC == ecrecover(_txMsgHashes[2], uint8(custodianTx[6].toUint()), custodianTx[7].toBytes32(), custodianTx[8].toBytes32()), "custodianTx should be signed by custodian");
-    // require(lastCustody == ecrecover(_txMsgHashes[0], uint8(withdrawTx[6].toUint()), withdrawTx[7].toBytes32(), withdrawTx[8].toBytes32()), "WithdrawalTx not signed by lastTx receipient");
-    // //TODO: which is more efficient, checking parameters or hash?
-    // require(parseData(lastTx[5].toData(),3).equal(parseData(custodianTx[5].toData(),1)), "token_ids do not match");
-    // require(parseData(lastTx[5].toData(),4).equal(parseData(custodianTx[5].toData(),2), "nonces do not match");
-
+    checkTransferTxAndCustodianTx(transferTx, custodianTx, _txMsgHashes[1]);
+    require(challengeAddress[_mintHash] == parseData(transferTx[5].toData(), 1).toAddress(12), "token needs to be transfered from last proven custody");
+    require(_mintHash == parseData(transferTx[5].toData(), 3).toUint(0), "needs to refer to the same mintHash");
     
+    _to.send(challengeStake[_mintHash]);
+    resetChallenge(_mintHash);
   }
 
   function checkTransferTxAndCustodianTx(RLP.RLPItem[] _transferTx, RLP.RLPItem[] _custodianTx, bytes32 _custodianTxMsgHash) internal {
