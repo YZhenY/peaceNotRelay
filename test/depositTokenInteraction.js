@@ -55,7 +55,8 @@ var getNonce = Promise.promisify(function getNonce(address, callback) {
 })
 
 web3.eth.sendRawTransaction = Promise.promisify(web3.eth.sendRawTransaction);
-
+web3.eth.getBalance = Promise.promisify(web3.eth.getBalance);
+web3.currentProvider.send = Promise.promisify(web3.currentProvider.send);
 
 var dummyMintHash = new BN('0xd9f48f06cfd7a657aec67d94e17e2e921df7ef2fa4d29ff2c0ec6bb3271a28dc');
 var dummyAddress = "0xc40b249a7cde0fca8fadcf4eba8dea933b460bd7";
@@ -83,6 +84,7 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
 
   it("should  transferFrom() and custodianApprove()", async () => {
     var tokenValue = 10000;
+    var stakeValue = 1000;
     var result = await tokenContract.mint(tokenValue, accounts[2]);
     var mintHash = result.logs[1].args.mintHash;
     result = await depositContract.deposit(mintHash, accounts[2], {value: tokenValue});
@@ -131,17 +133,25 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
     })
     var txLengths = [rawWithdrawal.rawTx.toString('hex').length + 2, rawTransferFrom.rawTx.toString('hex').length + 2, rawCustodianApprove.rawTx.toString('hex').length + 2 ];
     var txMsgHashes = [rawWithdrawal.msgHash, rawTransferFrom.msgHash, rawCustodianApprove.msgHash];
-    console.log("BUNDLE: ", bytes32Bundle);
-    console.log("txLENGHTS: ", txLengths);
-    console.log("HashShit: ", txMsgHashes);
-    console.log()
-    result = await depositContract.withdraw(accounts[3], mintHash, bytes32Bundle, txLengths, txMsgHashes, 1, {value:1000});
+    // console.log("BUNDLE: ", bytes32Bundle);
+    // console.log("txLENGHTS: ", txLengths);
+    // console.log("HashShit: ", txMsgHashes);
+    result = await depositContract.withdraw(accounts[4], mintHash, bytes32Bundle, txLengths, txMsgHashes, 1, {value:stakeValue});
+
+    //Time Travel Forward
+    await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_increaseTime", params: [605], id: 0});
+    await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_mine", params: [], id: 0});
+
+    var startAmount = await web3.eth.getBalance(accounts[4]);    
+    result = await depositContract.claim(mintHash);
+    var newBalance = await web3.eth.getBalance(accounts[4]);
+    var withdrawnAmount = newBalance.sub(startAmount);
+    assert(withdrawnAmount.eq(tokenValue + stakeValue), `should withdraw ${tokenValue + stakeValue} , instead ${withdrawnAmount}`);
+    // for (var i = 0; i < result.logs.length; i ++) {
+    //   console.log(`${result.logs[i].event}: `,result.logs[i].args )
+    // }
 
 
-    for (var i = 0; i < result.logs.length; i ++) {
-      console.log(`${result.logs[i].event}: `,result.logs[i].args )
-    }
-    console.log(accounts[3]);
   })
 })
 

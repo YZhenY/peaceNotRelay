@@ -117,7 +117,7 @@ contract DepositContract {
   event TraceAddress(address out);
   event Trace32(bytes32 out);
   function withdraw(address _to, uint256 _mintHash, bytes32[] _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes, uint256 _declaredNonce) public payable  {
-    // TODO: check amount to stake, decern challenge time
+    // TODO: check amount to stake, decern challenge time, require that a challenge has not started
 
     // splits bundle into individual rawTxs
     bytes[] rawTxList;
@@ -157,7 +157,8 @@ contract DepositContract {
   function challengeWithFutureCustody(address _to, uint256 _mintHash, bytes _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes) public { 
     require(challengeTime[_mintHash] != 0);
     require(challengeTime[_mintHash] > now);
-    
+
+
     
   }
 
@@ -187,6 +188,7 @@ contract DepositContract {
   function resetChallenge(uint256 _mintHash) internal {
     challengeStake[_mintHash] = 0;
     challengeAddress[_mintHash] = 0;
+    challengeNonce[_mintHash] = 0;
     challengeTime[_mintHash] = 0; 
   }
 
