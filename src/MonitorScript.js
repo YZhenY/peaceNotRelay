@@ -3,7 +3,7 @@ akombalabs.com
 
 This script allows a Monitor to:
 - listen to HomeChain withdraws
-- be alerted of conflicts on HomeChain withdraws
+- check if a HomeChain withdraw conflicts with transfers on ForeignChain
 - get chain of custody of particular tokenID on ForeignChain TokenContract
 - submit chain of custody to HomeChain DepositContract in a challenge
 
@@ -20,28 +20,37 @@ var privateKey = '0x13410a539b4fdb8dabde37ff8d687cc23eea64ab11eaf348a2fd775ba71a
 var publicAddress = '0xC33Bdb8051D6d2002c0D80A1Dd23A1c9d9FC26E4';
 var wallet = new ethers.Wallet(privateKey, provider);
 
-// //specify TokenContract
-// var tokenContractAddress = '0xF22999d07Bf99C75112C292AB1B399423Cb770ce';
-// var jsonFile = '../Contracts/tokenContract.json';
-// var parsed = JSON.parse(fs.readFileSync(jsonFile));
-// //var abi = parsed.abi
-// var bytecodeFile = '../Contracts/tokenContract.txt';
-// var bytecode = fs.readFileSync(bytecodeFile, "utf-8");
+//--------------------------------------------------------------------------------
+//Listen to HomeChain withdraws
+var withdrawMethodID = '0xb22781db7a1c1a87b86b7215e93e2ad8791bb8cc984291af99060086f14f0b4a';
+var tokenIDHex = '0x9744663e9ce4a436cbd897d62862050ac115b19e8069f51b444cafc7b756b6ba';
+var tokenIDInt = '68420091402644995921492871103118945056506363385934839950840550634224801461946';
 
-// var tokenContract = new ethers.Contract(tokenContractAddress, parsed, wallet);
+// provider.on([ transferMethodID ], function(log) {
+//     console.log('Event Log');
+//     console.log(log);
+// });
 
-var abiFile = fs.readFileSync('../Contracts/TokenContract_sol_TokenContract.abi')
-// var abiFile = fs.readFileSync('../Contracts/Ownable_sol_Ownable.abi')
-var abi = JSON.parse(abiFile.toString())
-var binFile = fs.readFileSync('../Contracts/TokenContract_sol_TokenContract.bin', "utf-8")
-// var binFile = fs.readFileSync('../Contracts/Ownable_sol_Ownable.bin', "utf-8")
-var bin = "0x"+binFile.toString()
-var deployTransaction = ethers.Contract.getDeployTransaction(bin, abi,
-	'0xC33Bdb8051D6d2002c0D80A1Dd23A1c9d9FC26E4');
-var sendPromise = wallet.sendTransaction(deployTransaction);
-sendPromise.then(function(err,transaction) {
-    //console.log(err,transaction);
-});
+async function withdrawHistory(_tokenIDHex) {
+	var filter = {
+		fromBlock: 3788780,
+		toBlock: 'latest',
+		topics: [
+		withdrawMethodID,
+		null,null,
+		_tokenIDHex
+		]
+	}
+	var withdrawEvents = provider.getLogs(filter)
+	withdrawEvents.then(function(result){
+	   console.log(result);
+	});
+}
+
+//--------------------------------------------------------------------------------
+//Check if HomeChain withdraw conflicts with transfers on TokenContract
+
+
 
 //--------------------------------------------------------------------------------
 //Retrieving transfer history of a tokenID
@@ -63,3 +72,6 @@ async function transferHistory(tokenID) {
 	   console.log(result);
 	});
 }
+
+//--------------------------------------------------------------------------------
+//Submitting transfer history of a tokenID in a challenge
