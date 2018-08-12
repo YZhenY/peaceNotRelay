@@ -2,9 +2,9 @@
 akombalabs.com
 
 This script allows a Custodian to:
-- make a HomeChain DepositContract;
+- deploy a HomeChain DepositContract;
 - stake on a HomeChain DepositContract;
-- make a ForeignChain TokenContract;
+- deploy a ForeignChain TokenContract;
 - listen for Transfers on a ForeignChain TokenContract;
 - co-sign a transaction on a ForeignChain TokenContract;
 
