@@ -195,7 +195,7 @@ contract ERC721BasicToken is SupportsInterfaceWithLookup, ERC721Basic {
   )
     public
   {
-    transferFrom(_from, _to, _tokenId);
+    // transferFrom(_from, _to, _tokenId);
     // solium-disable-next-line arg-overflow
     require(checkAndCallSafeTransfer(_from, _to, _tokenId, _data));
   }

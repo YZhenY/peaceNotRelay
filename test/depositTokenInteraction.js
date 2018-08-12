@@ -98,7 +98,7 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
       privKeys[2],
       tokenContract.address,
       0,
-      tokenContract.transferFrom.request(accounts[2], accounts[3], mintHash.toString()).params[0].data
+      tokenContract.transferFrom.request(accounts[2], accounts[3], mintHash.toString(), 0).params[0].data
     )
     result = await web3.eth.sendRawTransaction('0x' + rawTransferFrom.rawTx.toString('hex'));
     result = await tokenContract.transferRequest(mintHash);
@@ -109,7 +109,7 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
       privKeys[1],
       tokenContract.address,
       0,
-      tokenContract.custodianApprove.request(mintHash.toString()).params[0].data
+      tokenContract.custodianApprove.request(mintHash.toString(), 0).params[0].data
     )
 
     result = await web3.eth.sendRawTransaction('0x' + rawCustodianApprove.rawTx.toString('hex'));

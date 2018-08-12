@@ -90,11 +90,11 @@ contract TokenContract is ERC721BasicToken {
 
   /* ERC721 Related Functions --------------------------------------------------*/
   // Mapping from token ID to approved address
-  mapping (uint256 => address) public custodianApproval;
+  mapping (bytes32 => address) public custodianApproval;
 
 
   
-  event TransferRequest(address indexed from, address indexed to, uint256 indexed _tokenId);
+  event TransferRequest(address indexed from, address indexed to, uint256 indexed _tokenId, bytes32 approvalHash);
   
   /**
    * @dev Transfers the ownership of a given token ID to another address
@@ -103,50 +103,56 @@ contract TokenContract is ERC721BasicToken {
    * @param _from current owner of the token
    * @param _to address to receive the ownership of the given token ID
    * @param _tokenId uint256 ID of the token to be transferred
+   * @param _declaredNonce uint256 nonce, depth of transaction
   */
   function transferFrom(
     address _from,
     address _to,
-    uint256 _tokenId
+    uint256 _tokenId,
+    uint256 _declaredNonce
   )
     public
   {
     require(isApprovedOrOwner(msg.sender, _tokenId));
     require(_from != address(0));
     require(_to != address(0));
+    //TODO: do we need to check if declared nonce constantly increases
 
     clearApproval(_from, _tokenId);
-    custodianApproval[_tokenId] = _to;
+    //TODO: Double check if hash is secure, no chance of collision
+    bytes32 approvalHash = keccak256(uint256ToBytes(_tokenId).concat(uint256ToBytes(_declaredNonce)));
+    custodianApproval[approvalHash] = _to;
 
-    emit TransferRequest(_from, _to, _tokenId);
+    emit TransferRequest(_from, _to, _tokenId, approvalHash);
   }
 
-  function custodianApprove(uint256 _tokenId) onlyCustodian public {
+  function custodianApprove(uint256 _tokenId, uint256 _declaredNonce) onlyCustodian public {
     require(exists(_tokenId));
-    address _to = custodianApproval[_tokenId];
+    bytes32 approvalHash = keccak256(uint256ToBytes(_tokenId).concat(uint256ToBytes(_declaredNonce)));
+    address _to = custodianApproval[approvalHash];
     address _from = ownerOf(_tokenId);
     removeTokenFrom(_from, _tokenId);
     addTokenTo(_to, _tokenId);
     emit Transfer(_from, _to, _tokenId);
-    clearCustodianApproval(_tokenId);
+    clearCustodianApproval(approvalHash);
   }
 
-  function revertTransfer(uint256 _tokenId) public {
+  function revertTransfer(uint256 _tokenId, uint256 _declaredNonce) public {
     require(isApprovedOrOwner(msg.sender, _tokenId), "no approval/ not owner");
-    clearCustodianApproval(_tokenId);
+    clearCustodianApproval(keccak256(uint256ToBytes(_tokenId).concat(uint256ToBytes(_declaredNonce))));
   }
 
-  function transferRequest(uint256 _tokenId) public view returns(address) {
-    return custodianApproval[_tokenId];
+  function viewTransferRequest(bytes32 _approvalHash) public view returns(address) {
+    return custodianApproval[_approvalHash];
   }
 
   /**
    * @dev Internal function to clear current custodian approval of a given token ID
-   * @param _tokenId uint256 ID of the token to be transferred
+   * @param _approvalHash bytes32 ID of the token to be transferred
    */
-  function clearCustodianApproval(uint256 _tokenId) internal {
-    if (custodianApproval[_tokenId] != address(0)) {
-      custodianApproval[_tokenId] = address(0);
+  function clearCustodianApproval(bytes32 _approvalHash) internal {
+    if (custodianApproval[_approvalHash] != address(0)) {
+      custodianApproval[_approvalHash] = address(0);
     }
   }
 
