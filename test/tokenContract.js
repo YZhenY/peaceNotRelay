@@ -53,20 +53,20 @@ contract('Token Contract Test', async (accounts) => {
 
     var token =  result.logs[0].args._tokenId;
     result = await tokenContract.transferFrom(accounts[1], accounts[2], token, 0, {from: accounts[1]});
-    // var transferFromTx = result.tx; 
-    // assert(result.logs[0].args._tokenId.eq(token), `should token shoudl equal token, ${token} instead ${result.logs[0].args._tokenId}`);
-    // assert(result.logs[0].event === "TransferRequest", "should emit event TransferRequest");
+    var transferFromTx = result.tx; 
+    assert(result.logs[0].args._tokenId.eq(token), `should token shoudl equal token, ${token} instead ${result.logs[0].args._tokenId}`);
+    assert(result.logs[0].event === "TransferRequest", "should emit event TransferRequest");
 
-    // result = await tokenContract.custodianApprove(token, 0, {from: accounts[0]});
-    // var custodianApproveTx = result.tx;
-    // result = await tokenContract.ownerOf(token);
-    // assert(result === accounts[2], `token should have transfered to ${accounts[2]}, instead ${result}`);
+    result = await tokenContract.custodianApprove(token, 0, {from: accounts[0]});
+    var custodianApproveTx = result.tx;
+    result = await tokenContract.ownerOf(token);
+    assert(result === accounts[2], `token should have transfered to ${accounts[2]}, instead ${result}`);
 
-    // web3.eth.getTransaction = Promise.promisify(web3.eth.getTransaction);
-    // transferFromTx  = await web3.eth.getTransaction(transferFromTx);
-    // custodianApproveTx  = await web3.eth.getTransaction(custodianApproveTx);
-    // console.log("TRANSFER", transferFromTx.value.toJSON(), transferFromTx.gasPrice.toJSON());
-    // console.log("custodian: ", custodianApproveTx.value.toJSON(), custodianApproveTx.gasPrice.toJSON() );
+    web3.eth.getTransaction = Promise.promisify(web3.eth.getTransaction);
+    transferFromTx  = await web3.eth.getTransaction(transferFromTx);
+    custodianApproveTx  = await web3.eth.getTransaction(custodianApproveTx);
+    console.log("TRANSFER", transferFromTx.value.toJSON(), transferFromTx.gasPrice.toJSON());
+    console.log("custodian: ", custodianApproveTx.value.toJSON(), custodianApproveTx.gasPrice.toJSON() );
 
   })
 

@@ -67,8 +67,8 @@ contract DepositContract {
 
   bytes4 mintSignature = 0xe32e7aff;
   bytes4 withdrawSignature = 0x2e1a7d4d;
-  bytes4 transferFromSignature = 0x23b872dd;
-  bytes4 custodianApproveSignature = 0xeae02892;
+  bytes4 transferFromSignature = 0xfe99049a;
+  bytes4 custodianApproveSignature = 0x6e3c045e;
 
 
   function setTokenContract(address _tokenContract) onlyCustodian statePreStaked public {
