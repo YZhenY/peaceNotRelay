@@ -67,6 +67,7 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
     tokenContract = await TokenContract.new(accounts[1]);
     depositContract = await DepositContract.new(accounts[0]);
     await depositContract.setTokenContract(tokenContract.address);
+    await depositContract.setCustodianETC(accounts[1]);
   })
 
   it("should  mint() and then deposit()", async () => {
@@ -153,6 +154,8 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
 
 
   })
+
+
 })
 
 var toBytes32BundleArr = function (rawBundle) {

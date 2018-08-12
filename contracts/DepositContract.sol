@@ -75,6 +75,11 @@ contract DepositContract {
     tokenContract = _tokenContract;
   }
 
+
+  function setCustodianETC(address _custodianETC) onlyCustodian statePreStaked public {
+    custodianETC = _custodianETC;
+  }
+
   function finalizeStake () onlyCustodian statePreStaked public {
     stakedAmount = address(this).balance;
     depositCap = address(this).balance.div(2);
@@ -93,6 +98,8 @@ contract DepositContract {
   mapping (uint256 => uint256) challengeTime;
   // mintHashToAddress
   mapping (uint256 => address) challengeAddress;
+  // mintHashToAddress
+  mapping (uint256 => address) challengeRecipient;
   //mintToStake 
   mapping (uint256 => uint256) challengeStake;
   //mintToNonce/depth
@@ -128,18 +135,21 @@ contract DepositContract {
     RLP.RLPItem[] memory custodianTx = rawTxList[2].toRLPItem().toList();
     bytes4 lastTxFuncSig = bytesToBytes4(parseData(lastTx[5].toData(), 0), 0);
     bytes4 custodianTxFuncSig = bytesToBytes4(parseData(custodianTx[5].toData(), 0), 0);
+    address lastCustody = parseData(lastTx[5].toData(), 2).toAddress(12);
     require(withdrawTx[3].toAddress() == tokenContract);
     require(lastTx[3].toAddress() == tokenContract);
     require(custodianTx[3].toAddress() == tokenContract);
     require(lastTxFuncSig == transferFromSignature, "lastTx is not transferFrom function");
     require(custodianTxFuncSig == custodianApproveSignature, "custodianTx is not custodianApproval");
-    require(parseData(lastTx[5].toData(), 2).toAddress(12) == ecrecover(_txMsgHashes[0], uint8(withdrawTx[6].toUint()), withdrawTx[7].toBytes32(), withdrawTx[8].toBytes32()), "WithdrawalTx not signed by lastTx receipient");
+    require(custodianETC == ecrecover(_txMsgHashes[2], uint8(custodianTx[6].toUint()), custodianTx[7].toBytes32(), custodianTx[8].toBytes32()), "custodianTx should be signed by custodian");
+    require(lastCustody == ecrecover(_txMsgHashes[0], uint8(withdrawTx[6].toUint()), withdrawTx[7].toBytes32(), withdrawTx[8].toBytes32()), "WithdrawalTx not signed by lastTx receipient");
     require(parseData(lastTx[5].toData(),3).equal(parseData(custodianTx[5].toData(),1)), "token_ids do not match");
 
     //start challenge
     challengeTime[_mintHash] = now + 10 minutes;
     challengeNonce[_mintHash] = _declaredNonce;
-    challengeAddress[_mintHash] = _to;
+    challengeAddress[_mintHash] = lastCustody;
+    challengeRecipient[_mintHash] = _to;
     challengeStake[_mintHash] = msg.value;
   }
 
@@ -148,15 +158,19 @@ contract DepositContract {
     require(challengeTime[_mintHash] != 0);
     require(challengeTime[_mintHash] < now);
     
-    challengeAddress[_mintHash].send((mintHashToAmount[_mintHash] ) + challengeStake[_mintHash]);
+    challengeRecipient[_mintHash].send((mintHashToAmount[_mintHash] ) + challengeStake[_mintHash]);
 
     mintHashToAmount[_mintHash] = 0;
     resetChallenge(_mintHash);
   }
 
-  function challengeWithFutureCustody(address _to, uint256 _mintHash, bytes _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes) public { 
+  function challengeWithFutureCustody(address _to, uint256 _mintHash, bytes32[] _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes) public { 
     require(challengeTime[_mintHash] != 0);
     require(challengeTime[_mintHash] > now);
+
+    // splits bundle into individual rawTxs
+    bytes[] rawTxList;
+    splitTxBundle(_rawTxBundle, _txLengths, rawTxList);
 
 
     
@@ -187,6 +201,7 @@ contract DepositContract {
 
   function resetChallenge(uint256 _mintHash) internal {
     challengeStake[_mintHash] = 0;
+    challengeRecipient[_mintHash] = 0;
     challengeAddress[_mintHash] = 0;
     challengeNonce[_mintHash] = 0;
     challengeTime[_mintHash] = 0; 
