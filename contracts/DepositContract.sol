@@ -133,19 +133,12 @@ contract DepositContract {
     RLP.RLPItem[] memory withdrawTx = rawTxList[0].toRLPItem().toList();
     RLP.RLPItem[] memory lastTx = rawTxList[1].toRLPItem().toList();
     RLP.RLPItem[] memory custodianTx = rawTxList[2].toRLPItem().toList();
-    bytes4 lastTxFuncSig = bytesToBytes4(parseData(lastTx[5].toData(), 0), 0);
-    bytes4 custodianTxFuncSig = bytesToBytes4(parseData(custodianTx[5].toData(), 0), 0);
+
+    checkTransferTxAndCustodianTx(lastTx, custodianTx, _txMsgHashes[2]);
+
     address lastCustody = parseData(lastTx[5].toData(), 2).toAddress(12);
     require(withdrawTx[3].toAddress() == tokenContract);
-    require(lastTx[3].toAddress() == tokenContract);
-    require(custodianTx[3].toAddress() == tokenContract);
-    require(lastTxFuncSig == transferFromSignature, "lastTx is not transferFrom function");
-    require(custodianTxFuncSig == custodianApproveSignature, "custodianTx is not custodianApproval");
-    require(custodianETC == ecrecover(_txMsgHashes[2], uint8(custodianTx[6].toUint()), custodianTx[7].toBytes32(), custodianTx[8].toBytes32()), "custodianTx should be signed by custodian");
     require(lastCustody == ecrecover(_txMsgHashes[0], uint8(withdrawTx[6].toUint()), withdrawTx[7].toBytes32(), withdrawTx[8].toBytes32()), "WithdrawalTx not signed by lastTx receipient");
-    //TODO: which is more efficient, checking parameters or hash?
-    require(parseData(lastTx[5].toData(),3).equal(parseData(custodianTx[5].toData(),1)), "token_ids do not match");
-    require(parseData(lastTx[5].toData(),4).equal(parseData(custodianTx[5].toData(),2)), "nonces do not match");
 
     //start challenge
     challengeTime[_mintHash] = now + 10 minutes;
@@ -192,6 +185,19 @@ contract DepositContract {
 
     
   }
+
+  function checkTransferTxAndCustodianTx(RLP.RLPItem[] _transferTx, RLP.RLPItem[] _custodianTx, bytes32 _custodianTxMsgHash) internal {
+    require(_transferTx[3].toAddress() == tokenContract);
+    require(_custodianTx[3].toAddress() == tokenContract);
+    require(bytesToBytes4(parseData(_transferTx[5].toData(), 0), 0) == transferFromSignature, "_transferTx is not transferFrom function");
+    require(bytesToBytes4(parseData(_custodianTx[5].toData(), 0), 0) == custodianApproveSignature, "_custodianTx is not custodianApproval");
+    require(custodianETC == ecrecover(_custodianTxMsgHash, uint8(_custodianTx[6].toUint()), _custodianTx[7].toBytes32(), _custodianTx[8].toBytes32()), "_custodianTx should be signed by custodian");
+    //TODO: which is more efficient, checking parameters or hash?
+    require(parseData(_transferTx[5].toData(),3).equal(parseData(_custodianTx[5].toData(),1)), "token_ids do not match");
+    require(parseData(_transferTx[5].toData(),4).equal(parseData(_custodianTx[5].toData(),2)), "nonces do not match");
+  }
+
+
 
   function splitTxBundle(bytes32[] _rawTxBundle, uint256[] _txLengths, bytes[] storage _rawTxList) internal {
     uint256 txStartPosition = 0;
