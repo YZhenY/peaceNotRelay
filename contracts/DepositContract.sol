@@ -128,7 +128,7 @@ contract DepositContract {
   function withdraw(address _to, uint256 _mintHash, bytes32[] _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes, uint256 _declaredNonce) public payable  {
     // TODO:  decern challenge time, 
     //check amount to stake
-    // require(msg.value >= gasPerChallenge.mul(tx.gasprice));
+    require(msg.value >= gasPerChallenge.mul(tx.gasprice).mul(_declaredNonce));
     // splits bundle into individual rawTxs
     bytes[] rawTxList;
     splitTxBundle(_rawTxBundle, _txLengths, rawTxList);
