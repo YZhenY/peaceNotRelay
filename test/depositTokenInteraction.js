@@ -24,33 +24,9 @@ var transactionFields = [ 'nonce',
 's',
 'from' ]
 
-var getNonce = Promise.promisify(function getNonce(address, callback) {
-  web3.eth.getTransactionCount(address, function(error, result) {
-      var txnsCount = result;
-      web3.currentProvider.sendAsync({
-          method: "txpool_content",
-          params: [],
-          jsonrpc: "2.0",
-          id: new Date().getTime()
-      }, function(error, result) {
-          if (result.result) {
-            if (result.result.pending) {
-                if (result.result.pending[address]) {
-                    txnsCount = txnsCount +
-                        Object.keys(result.result.pending[address]).length;
-                    callback(null, txnsCount);
-                } else {
-                    callback(null, txnsCount);
-                }
-            } else {
-                callback(null, txnsCount);
-            }
-          } else {
-            callback(null, txnsCount);
-        }
-      })
-  })
-})
+
+
+
 
 web3.eth.sendRawTransaction = Promise.promisify(web3.eth.sendRawTransaction);
 web3.eth.getBalance = Promise.promisify(web3.eth.getBalance);
@@ -66,10 +42,17 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
     depositContract = await DepositContract.new(accounts[0]);
     await depositContract.setTokenContract(tokenContract.address);
     await depositContract.setCustodianETC(accounts[1]);
+
+    gasPerChallenge = 206250;
+    //Will be wrong unless explicitly stated in transaction details
+    //https://ethereum.stackexchange.com/questions/39173/what-is-the-actual-gasprice-used-in-a-truffle-ganache-environment?rq=1
+    gasPrice = 500;
+    tokenValue = 10000;
+    stakeValue = gasPrice * gasPerChallenge;
+
   })
 
   it("should  mint() and then deposit()", async () => {
-    var tokenValue = 10000;
     var result = await tokenContract.mint(tokenValue, accounts[2]);
     assert(result.logs[1].event === "Mint", "should emit event mint");
     
@@ -82,8 +65,6 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
   })
 
   it("should be able to transfer and claim back home currency", async () => {
-    var tokenValue = 10000;
-    var stakeValue = 1000;
     var result = await tokenContract.mint(tokenValue, accounts[2]);
     var mintHash = result.logs[1].args.mintHash;
     result = await depositContract.deposit(mintHash, accounts[2], {value: tokenValue});
@@ -99,9 +80,6 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
       tokenContract.transferFrom.request(accounts[2], accounts[3], mintHash.toString(), 0).params[0].data
     )
     result = await web3.eth.sendRawTransaction('0x' + rawTransferFrom.rawTx.toString('hex'));
-
-    // // result = await tokenContract.viewTransferRequest(result.logs[0].args.approvalHash);
-    // assert(result === accounts[3], `token transfer request should be to ${accounts[3]}, instead ${result}`);
 
     var rawCustodianApprove = await generateRawTxAndMsgHash(
       accounts[1],
@@ -133,8 +111,9 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
     // console.log("BUNDLE: ", bytes32Bundle);
     // console.log("txLENGHTS: ", txLengths);
     // console.log("HashShit: ", txMsgHashes);
-    result = await depositContract.withdraw(accounts[4], mintHash, bytes32Bundle, txLengths, txMsgHashes, 1, {value:stakeValue});
+    result = await depositContract.withdraw(accounts[4], mintHash, bytes32Bundle, txLengths, txMsgHashes, 1, {gasPrice: gasPrice, value:stakeValue});
     console.log(`withdraw() gas used: ${result.receipt.gasUsed}`);
+
     //Time Travel Forward
     await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_increaseTime", params: [605], id: 0});
     await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_mine", params: [], id: 0});
@@ -148,8 +127,6 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
   })
 
   it("should revert claim() if attempted too early", async () => {
-    var tokenValue = 10000;
-    var stakeValue = 1000;
     var result = await tokenContract.mint(tokenValue, accounts[2]);
     var mintHash = result.logs[1].args.mintHash;
     result = await depositContract.deposit(mintHash, accounts[2], {value: tokenValue});
@@ -198,7 +175,7 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
     // console.log("BUNDLE: ", bytes32Bundle);
     // console.log("txLENGHTS: ", txLengths);
     // console.log("HashShit: ", txMsgHashes);
-    result = await depositContract.withdraw(accounts[4], mintHash, bytes32Bundle, txLengths, txMsgHashes, 1, {value:stakeValue});
+    result = await depositContract.withdraw(accounts[4], mintHash, bytes32Bundle, txLengths, txMsgHashes, 1, {gasPrice: gasPrice, value:stakeValue});
 
     assertRevert(depositContract.claim(mintHash));
 
@@ -207,8 +184,6 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
 
   //TODO: ISSUE NEED TO IMPLEMENT HALT OF TRANSFERS ON TOKEN CONTRACT
   it("should be able to handle early withdrawal attack", async () => {
-    var tokenValue = 10000;
-    var stakeValue = 1000;
     var result = await tokenContract.mint(tokenValue, accounts[2]);
     var mintHash = result.logs[1].args.mintHash;
     result = await depositContract.deposit(mintHash, accounts[2], {value: tokenValue});
@@ -269,7 +244,7 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
 
     //STARTING CHALLENGE
     var withdrawArgs = formBundleLengthsHashes([rawWithdrawal, rawTransferFrom, rawCustodianApprove]);
-    result = await depositContract.withdraw(accounts[4], mintHash, withdrawArgs.bytes32Bundle, withdrawArgs.txLengths, withdrawArgs.txMsgHashes, 1, {value:stakeValue});
+    result = await depositContract.withdraw(accounts[4], mintHash, withdrawArgs.bytes32Bundle, withdrawArgs.txLengths, withdrawArgs.txMsgHashes, 1, {gasPrice: gasPrice, value:stakeValue});
 
     var startAmount = await web3.eth.getBalance(accounts[5]);    
 
@@ -283,8 +258,6 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
   })
 
   it("should be able to prove past custody", async () => {
-    var tokenValue = 10000;
-    var stakeValue = 1000;
     var result = await tokenContract.mint(tokenValue, accounts[2]);
     var mintHash = result.logs[1].args.mintHash;
     result = await depositContract.deposit(mintHash, accounts[2], {value: tokenValue});
@@ -340,7 +313,7 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
 
     //STARTING FRAUDULENT CHALLENGE
     var withdrawArgs = formBundleLengthsHashes([rawWithdrawal, rawTransferFrom2, rawCustodianApprove2]);
-    result = await depositContract.withdraw(accounts[8], mintHash, withdrawArgs.bytes32Bundle, withdrawArgs.txLengths, withdrawArgs.txMsgHashes, 1, {value:stakeValue});
+    result = await depositContract.withdraw(accounts[8], mintHash, withdrawArgs.bytes32Bundle, withdrawArgs.txLengths, withdrawArgs.txMsgHashes, 1, {gasPrice: gasPrice, value:stakeValue});
 
     var challengeArgs = formBundleLengthsHashes([rawTransferFrom, rawCustodianApprove]);
     result = await depositContract.challengeWithPastCustody(accounts[5], mintHash, challengeArgs.bytes32Bundle, challengeArgs.txLengths, challengeArgs.txMsgHashes);
@@ -353,8 +326,6 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
   })
 
   it("should be able to prove long chains of custody using challengeWithPastCustody()", async () => {
-    var tokenValue = 10000;
-    var stakeValue = 1000;
     var result = await tokenContract.mint(tokenValue, accounts[2]);
     var mintHash = result.logs[1].args.mintHash;
     result = await depositContract.deposit(mintHash, accounts[2], {value: tokenValue});
@@ -417,7 +388,7 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
 
     //STARTING FRAUDULENT CHALLENGE
     var withdrawArgs = formBundleLengthsHashes([rawWithdrawal, rawTransferFrom2, rawCustodianApprove2]);
-    result = await depositContract.withdraw(accounts[8], mintHash, withdrawArgs.bytes32Bundle, withdrawArgs.txLengths, withdrawArgs.txMsgHashes, 20, {value:stakeValue});
+    result = await depositContract.withdraw(accounts[8], mintHash, withdrawArgs.bytes32Bundle, withdrawArgs.txLengths, withdrawArgs.txMsgHashes, 20, {gasPrice: gasPrice, value:stakeValue});
 
     var challengeArgs = formBundleLengthsHashes(rawTxs);
     result = await depositContract.challengeWithPastCustody(accounts[5], mintHash, challengeArgs.bytes32Bundle, challengeArgs.txLengths, challengeArgs.txMsgHashes);
@@ -485,3 +456,31 @@ var generateRawTxAndMsgHash = async function(pubK, privK, to, value, data) {
 
   return {rawTx: rawTx, msgHash: msgHash};
 }
+
+var getNonce = Promise.promisify(function getNonce(address, callback) {
+  web3.eth.getTransactionCount(address, function(error, result) {
+      var txnsCount = result;
+      web3.currentProvider.sendAsync({
+          method: "txpool_content",
+          params: [],
+          jsonrpc: "2.0",
+          id: new Date().getTime()
+      }, function(error, result) {
+          if (result.result) {
+            if (result.result.pending) {
+                if (result.result.pending[address]) {
+                    txnsCount = txnsCount +
+                        Object.keys(result.result.pending[address]).length;
+                    callback(null, txnsCount);
+                } else {
+                    callback(null, txnsCount);
+                }
+            } else {
+                callback(null, txnsCount);
+            }
+          } else {
+            callback(null, txnsCount);
+        }
+      })
+  })
+})

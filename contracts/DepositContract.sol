@@ -62,7 +62,7 @@ contract DepositContract {
   event Challenge(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber);
   event ChallangeResolved(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber, bytes signedTx); 
   event Refund(address indexed withdrawer, uint256 amount, uint256 indexed blockNumber);
-  event Withdrawal(address indexed withdrawer, uint256 amount, uint256 indexed blockNumber);
+  event Withdrawal(address indexed withdrawer, uint256 indexed mintHash, uint256 stakedAmount, uint256 test);
   event Parsed(bytes data, address to, address from);
 
   bytes4 mintSignature = 0xe32e7aff;
@@ -70,6 +70,7 @@ contract DepositContract {
   bytes4 transferFromSignature = 0xfe99049a;
   bytes4 custodianApproveSignature = 0x6e3c045e;
 
+  uint256 gasPerChallenge = 206250;
 
   function setTokenContract(address _tokenContract) onlyCustodian statePreStaked public {
     tokenContract = _tokenContract;
@@ -125,8 +126,9 @@ contract DepositContract {
   event Trace32(bytes32 out);
   event TraceUint256(uint256 out);
   function withdraw(address _to, uint256 _mintHash, bytes32[] _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes, uint256 _declaredNonce) public payable  {
-    // TODO: check amount to stake, decern challenge time, require that a challenge has not started
-
+    // TODO:  decern challenge time, 
+    //check amount to stake
+    // require(msg.value >= gasPerChallenge.mul(tx.gasprice));
     // splits bundle into individual rawTxs
     bytes[] rawTxList;
     splitTxBundle(_rawTxBundle, _txLengths, rawTxList);
@@ -141,12 +143,15 @@ contract DepositContract {
     require(withdrawTx[3].toAddress() == tokenContract);
     require(lastCustody == ecrecover(_txMsgHashes[0], uint8(withdrawTx[6].toUint()), withdrawTx[7].toBytes32(), withdrawTx[8].toBytes32()), "WithdrawalTx not signed by lastTx receipient");
 
+    //require that a challenge has not started
+    require(challengeTime[_mintHash] == 0);
     //start challenge
     challengeTime[_mintHash] = now + 10 minutes;
     challengeNonce[_mintHash] = _declaredNonce;
     challengeAddress[_mintHash] = lastCustody;
     challengeRecipient[_mintHash] = _to;
     challengeStake[_mintHash] = msg.value;
+    emit Withdrawal(_to, _mintHash, msg.value, gasPerChallenge.mul(tx.gasprice));
   }
 
   //honest withdrawal
