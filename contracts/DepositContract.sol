@@ -123,6 +123,7 @@ contract DepositContract {
   event Trace(bytes out);
   event TraceAddress(address out);
   event Trace32(bytes32 out);
+  event TraceUint256(uint256 out);
   function withdraw(address _to, uint256 _mintHash, bytes32[] _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes, uint256 _declaredNonce) public payable  {
     // TODO: check amount to stake, decern challenge time, require that a challenge has not started
 
@@ -173,6 +174,29 @@ contract DepositContract {
     checkTransferTxAndCustodianTx(transferTx, custodianTx, _txMsgHashes[1]);
     require(challengeAddress[_mintHash] == parseData(transferTx[5].toData(), 1).toAddress(12), "token needs to be transfered from last proven custody");
     require(_mintHash == parseData(transferTx[5].toData(), 3).toUint(0), "needs to refer to the same mintHash");
+    
+    _to.send(challengeStake[_mintHash]);
+    resetChallenge(_mintHash);
+  }
+
+  //TODO: Basic function right now, need to revamp stakes/incentives | need to implement custodian punishment conditions
+  function challengeWithPastCustody(address _to, uint256 _mintHash, bytes32[] _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes) public { 
+    require(challengeTime[_mintHash] != 0);
+    require(challengeTime[_mintHash] > now);
+
+    // splits bundle into individual rawTxs
+    bytes[] rawTxList;
+    splitTxBundle(_rawTxBundle, _txLengths, rawTxList);
+
+    for (uint i = 0; i < _txLengths.length; i +=2) {
+      RLP.RLPItem[] memory transferTx = rawTxList[i].toRLPItem().toList();
+      RLP.RLPItem[] memory custodianTx = rawTxList[i + 1].toRLPItem().toList();
+
+      checkTransferTxAndCustodianTx(transferTx, custodianTx, _txMsgHashes[i+1]);
+      require(_mintHash == parseData(transferTx[5].toData(), 3).toUint(0), "needs to refer to the same mintHash");
+      require(mintHashToMinter[_mintHash] == parseData(transferTx[5].toData(), 1).toAddress(12), "token needs to be transfered from last proven custody");
+      mintHashToMinter[_mintHash] = parseData(transferTx[5].toData(), 2).toAddress(12);
+    }
     
     _to.send(challengeStake[_mintHash]);
     resetChallenge(_mintHash);

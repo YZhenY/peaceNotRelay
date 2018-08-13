@@ -13,8 +13,6 @@ const EthereumTx = require('ethereumjs-tx')
 var RLP = require('rlp');
 var assertRevert = require('../utils/assertRevert.js');
 
-
-
 var transactionFields = [ 'nonce',
 'gasPrice',
 'gasLimit',
@@ -283,6 +281,76 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
     var withdrawnAmount = newBalance.sub(startAmount);
     assert(withdrawnAmount.eq(stakeValue), `should withdraw ${tokenValue + stakeValue} , instead ${withdrawnAmount}`);
 
+  })
+
+  it("should be able to prove past custody", async () => {
+    var tokenValue = 10000;
+    var stakeValue = 1000;
+    var result = await tokenContract.mint(tokenValue, accounts[2]);
+    var mintHash = result.logs[1].args.mintHash;
+    result = await depositContract.deposit(mintHash, accounts[2], {value: tokenValue});
+    result = await tokenContract.ownerOf(mintHash);
+    assert(result === accounts[2], `token should have transfered to ${accounts[2]}, instead ${result}`);
+
+    //FIRST TRANSFER
+    var rawTransferFrom = await generateRawTxAndMsgHash(
+      accounts[2],
+      privKeys[2],
+      tokenContract.address,
+      0,
+      tokenContract.transferFrom.request(accounts[2], accounts[3], mintHash.toString(), 0).params[0].data
+    )
+    result = await web3.eth.sendRawTransaction('0x' + rawTransferFrom.rawTx.toString('hex'));
+    var rawCustodianApprove = await generateRawTxAndMsgHash(
+      accounts[1],
+      privKeys[1],
+      tokenContract.address,
+      0,
+      tokenContract.custodianApprove.request(mintHash.toString(), 0).params[0].data
+    )
+
+    result = await web3.eth.sendRawTransaction('0x' + rawCustodianApprove.rawTx.toString('hex'));
+    result = await tokenContract.ownerOf(mintHash);
+    assert(result === accounts[3], `token should have transfered to ${accounts[3]}, instead ${result}`);
+    
+
+    // FUTURE FRAUDULENT TRANSFER
+    var rawTransferFrom2 = await generateRawTxAndMsgHash(
+      accounts[6],
+      privKeys[6],
+      tokenContract.address,
+      0,
+      tokenContract.transferFrom.request(accounts[6], accounts[7], mintHash.toString(), 0).params[0].data
+    )
+    var rawCustodianApprove2 = await generateRawTxAndMsgHash(
+      accounts[1],
+      privKeys[1],
+      tokenContract.address,
+      0,
+      tokenContract.custodianApprove.request(mintHash.toString(), 0).params[0].data
+    )
+    
+    //CREATE FUTURE FRAUDULENT WITHDRAWAL
+    var rawWithdrawal = await generateRawTxAndMsgHash(
+      accounts[7],
+      privKeys[7],
+      tokenContract.address,
+      0,
+      tokenContract.withdraw.request(mintHash.toString()).params[0].data
+    )
+
+    //STARTING FRAUDULENT CHALLENGE
+    var withdrawArgs = formBundleLengthsHashes([rawWithdrawal, rawTransferFrom2, rawCustodianApprove2]);
+    result = await depositContract.withdraw(accounts[8], mintHash, withdrawArgs.bytes32Bundle, withdrawArgs.txLengths, withdrawArgs.txMsgHashes, 1, {value:stakeValue});
+
+    var challengeArgs = formBundleLengthsHashes([rawTransferFrom, rawCustodianApprove]);
+    result = await depositContract.challengeWithPastCustody(accounts[5], mintHash, challengeArgs.bytes32Bundle, challengeArgs.txLengths, challengeArgs.txMsgHashes);
+
+    //Time Travel Forward
+    await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_increaseTime", params: [605], id: 0});
+    await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_mine", params: [], id: 0});
+    
+    assertRevert(depositContract.claim(mintHash));
   })
 })
 
