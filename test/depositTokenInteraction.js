@@ -99,7 +99,7 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
       tokenContract.transferFrom.request(accounts[2], accounts[3], mintHash.toString(), 0).params[0].data
     )
     result = await web3.eth.sendRawTransaction('0x' + rawTransferFrom.rawTx.toString('hex'));
-    // console.log(result);
+
     // // result = await tokenContract.viewTransferRequest(result.logs[0].args.approvalHash);
     // assert(result === accounts[3], `token transfer request should be to ${accounts[3]}, instead ${result}`);
 
@@ -114,7 +114,6 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
     result = await web3.eth.sendRawTransaction('0x' + rawCustodianApprove.rawTx.toString('hex'));
     result = await tokenContract.ownerOf(mintHash);
     assert(result === accounts[3], `token should have transfered to ${accounts[3]}, instead ${result}`);
-    
     var rawWithdrawal = await generateRawTxAndMsgHash(
       accounts[3],
       privKeys[3],
@@ -135,7 +134,7 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
     // console.log("txLENGHTS: ", txLengths);
     // console.log("HashShit: ", txMsgHashes);
     result = await depositContract.withdraw(accounts[4], mintHash, bytes32Bundle, txLengths, txMsgHashes, 1, {value:stakeValue});
-
+    console.log(`withdraw() gas used: ${result.receipt.gasUsed}`);
     //Time Travel Forward
     await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_increaseTime", params: [605], id: 0});
     await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_mine", params: [], id: 0});
@@ -276,7 +275,7 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
 
     var challengeArgs = formBundleLengthsHashes([rawTransferFrom2, rawCustodianApprove2]);
     result = await depositContract.challengeWithFutureCustody(accounts[5], mintHash, challengeArgs.bytes32Bundle, challengeArgs.txLengths, challengeArgs.txMsgHashes);
-
+    console.log(`challengeWithFutureCustody() gas used: ${result.receipt.gasUsed}`);
     var newBalance = await web3.eth.getBalance(accounts[5]);
     var withdrawnAmount = newBalance.sub(startAmount);
     assert(withdrawnAmount.eq(stakeValue), `should withdraw ${tokenValue + stakeValue} , instead ${withdrawnAmount}`);
@@ -345,7 +344,84 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
 
     var challengeArgs = formBundleLengthsHashes([rawTransferFrom, rawCustodianApprove]);
     result = await depositContract.challengeWithPastCustody(accounts[5], mintHash, challengeArgs.bytes32Bundle, challengeArgs.txLengths, challengeArgs.txMsgHashes);
+    console.log(`challengeWithPastCustody() gas used: ${result.receipt.gasUsed}`);
+    //Time Travel Forward
+    await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_increaseTime", params: [605], id: 0});
+    await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_mine", params: [], id: 0});
+    
+    assertRevert(depositContract.claim(mintHash));
+  })
 
+  it("should be able to prove long chains of custody using challengeWithPastCustody()", async () => {
+    var tokenValue = 10000;
+    var stakeValue = 1000;
+    var result = await tokenContract.mint(tokenValue, accounts[2]);
+    var mintHash = result.logs[1].args.mintHash;
+    result = await depositContract.deposit(mintHash, accounts[2], {value: tokenValue});
+    result = await tokenContract.ownerOf(mintHash);
+    assert(result === accounts[2], `token should have transfered to ${accounts[2]}, instead ${result}`);
+
+    var rawTxs = []
+    
+    //CREATE CHAIN i LONG
+    for (var i = 0; i < 10; i ++) {
+      var sender = (i % 2 === 0) ? 2 : 3;
+      var recipient = (i % 2 === 1) ? 2 : 3;
+      var rawTransferFrom = await generateRawTxAndMsgHash(
+        accounts[sender],
+        privKeys[sender],
+        tokenContract.address,
+        0,
+        tokenContract.transferFrom.request(accounts[sender], accounts[recipient], mintHash.toString(), i).params[0].data
+      )
+      result = await web3.eth.sendRawTransaction('0x' + rawTransferFrom.rawTx.toString('hex'));
+      var rawCustodianApprove = await generateRawTxAndMsgHash(
+        accounts[1],
+        privKeys[1],
+        tokenContract.address,
+        0,
+        tokenContract.custodianApprove.request(mintHash.toString(), i).params[0].data
+      )
+      result = await web3.eth.sendRawTransaction('0x' + rawCustodianApprove.rawTx.toString('hex'));
+      result = await tokenContract.ownerOf(mintHash);
+      assert(result === accounts[recipient], `token should have transfered to ${accounts[recipient]}, instead ${result}`);
+      rawTxs.push(rawTransferFrom);
+      rawTxs.push(rawCustodianApprove);
+    }
+    
+
+    // FUTURE FRAUDULENT TRANSFER
+    var rawTransferFrom2 = await generateRawTxAndMsgHash(
+      accounts[6],
+      privKeys[6],
+      tokenContract.address,
+      0,
+      tokenContract.transferFrom.request(accounts[6], accounts[7], mintHash.toString(), 20).params[0].data
+    )
+    var rawCustodianApprove2 = await generateRawTxAndMsgHash(
+      accounts[1],
+      privKeys[1],
+      tokenContract.address,
+      0,
+      tokenContract.custodianApprove.request(mintHash.toString(), 20).params[0].data
+    )
+    
+    //CREATE FUTURE FRAUDULENT WITHDRAWAL
+    var rawWithdrawal = await generateRawTxAndMsgHash(
+      accounts[7],
+      privKeys[7],
+      tokenContract.address,
+      0,
+      tokenContract.withdraw.request(mintHash.toString()).params[0].data
+    )
+
+    //STARTING FRAUDULENT CHALLENGE
+    var withdrawArgs = formBundleLengthsHashes([rawWithdrawal, rawTransferFrom2, rawCustodianApprove2]);
+    result = await depositContract.withdraw(accounts[8], mintHash, withdrawArgs.bytes32Bundle, withdrawArgs.txLengths, withdrawArgs.txMsgHashes, 20, {value:stakeValue});
+
+    var challengeArgs = formBundleLengthsHashes(rawTxs);
+    result = await depositContract.challengeWithPastCustody(accounts[5], mintHash, challengeArgs.bytes32Bundle, challengeArgs.txLengths, challengeArgs.txMsgHashes);
+    console.log(`long challengeWithPastCustody() gas used: ${result.receipt.gasUsed}`);
     //Time Travel Forward
     await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_increaseTime", params: [605], id: 0});
     await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_mine", params: [], id: 0});
