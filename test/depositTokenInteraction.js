@@ -292,14 +292,14 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
       privKeys[6],
       tokenContract.address,
       0,
-      tokenContract.transferFrom.request(accounts[6], accounts[7], mintHash.toString(), 0).params[0].data
+      tokenContract.transferFrom.request(accounts[6], accounts[7], mintHash.toString(), 5).params[0].data
     )
     var rawCustodianApprove2 = await generateRawTxAndMsgHash(
       accounts[1],
       privKeys[1],
       tokenContract.address,
       0,
-      tokenContract.custodianApprove.request(mintHash.toString(), 0).params[0].data
+      tokenContract.custodianApprove.request(mintHash.toString(), 5).params[0].data
     )
     
     //CREATE FUTURE FRAUDULENT WITHDRAWAL
@@ -313,10 +313,10 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
 
     //STARTING FRAUDULENT CHALLENGE
     var withdrawArgs = formBundleLengthsHashes([rawWithdrawal, rawTransferFrom2, rawCustodianApprove2]);
-    result = await depositContract.withdraw(accounts[8], mintHash, withdrawArgs.bytes32Bundle, withdrawArgs.txLengths, withdrawArgs.txMsgHashes, 1, {gasPrice: gasPrice, value:stakeValue});
+    result = await depositContract.withdraw(accounts[8], mintHash, withdrawArgs.bytes32Bundle, withdrawArgs.txLengths, withdrawArgs.txMsgHashes, 5, {gasPrice: gasPrice, value:stakeValue * 5});
 
     var challengeArgs = formBundleLengthsHashes([rawTransferFrom, rawCustodianApprove]);
-    result = await depositContract.challengeWithPastCustody(accounts[5], mintHash, challengeArgs.bytes32Bundle, challengeArgs.txLengths, challengeArgs.txMsgHashes);
+    result = await depositContract.initiateChallengeWithPastCustody(accounts[5], mintHash, challengeArgs.bytes32Bundle, challengeArgs.txLengths, challengeArgs.txMsgHashes, {gasPrice: gasPrice, value:stakeValue});
     console.log(`challengeWithPastCustody() gas used: ${result.receipt.gasUsed}`);
     //Time Travel Forward
     await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_increaseTime", params: [605], id: 0});
@@ -390,7 +390,10 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
     var withdrawArgs = formBundleLengthsHashes([rawWithdrawal, rawTransferFrom2, rawCustodianApprove2]);
     result = await depositContract.withdraw(accounts[8], mintHash, withdrawArgs.bytes32Bundle, withdrawArgs.txLengths, withdrawArgs.txMsgHashes, 20, {gasPrice: gasPrice, value:stakeValue * 20});
 
-    var challengeArgs = formBundleLengthsHashes(rawTxs);
+    var challengeArgs = formBundleLengthsHashes(rawTxs.slice(0,2));
+    result = await depositContract.initiateChallengeWithPastCustody(accounts[5], mintHash, challengeArgs.bytes32Bundle, challengeArgs.txLengths, challengeArgs.txMsgHashes, {gasPrice: gasPrice, value:stakeValue * 4});
+
+    var challengeArgs = formBundleLengthsHashes(rawTxs.slice(2));
     result = await depositContract.challengeWithPastCustody(accounts[5], mintHash, challengeArgs.bytes32Bundle, challengeArgs.txLengths, challengeArgs.txMsgHashes);
     console.log(`long challengeWithPastCustody() gas used: ${result.receipt.gasUsed}`);
     //Time Travel Forward

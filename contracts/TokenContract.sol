@@ -97,7 +97,7 @@ contract TokenContract is ERC721BasicToken {
   event TransferRequest(address indexed from, address indexed to, uint256 indexed _tokenId, bytes32 approvalHash);
   
   /**
-   * @dev Transfers the ownership of a given token ID to another address
+   * @dev Requests transfer of ownership of a given token ID to another address
    * Usage of this method is discouraged, use `safeTransferFrom` whenever possible
    * Requires the msg sender to be the owner, approved, or operator
    * @param _from current owner of the token

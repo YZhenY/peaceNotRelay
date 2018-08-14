@@ -98,13 +98,18 @@ contract DepositContract {
   // mintHashToTimestamp
   mapping (uint256 => uint256) challengeTime;
   // mintHashToAddress
-  mapping (uint256 => address) challengeAddress;
+  mapping (uint256 => address) challengeAddressClaim;
   // mintHashToAddress
   mapping (uint256 => address) challengeRecipient;
   //mintToStake 
   mapping (uint256 => uint256) challengeStake;
-  //mintToNonce/depth
+  //mintToEndNonce/depth
+  mapping (uint256 => uint256) challengeEndNonce;
+  //mintHashToNonce
   mapping (uint256 => uint256) challengeNonce;
+  //mintHashToChallengerAddress
+  mapping (uint256 => address) challenger;
+
 
  /*
   /**
@@ -113,7 +118,7 @@ contract DepositContract {
    // TODO: check amount to stake, decern challenge time
    * @param _to address to send withdrawal 
    * @param _mintHash uint256 ID of token on TokenContract
-   * @param _rawTxBundle bytes bundle that takes in concatination of bytes _withdrawalTx, bytes _lastTx, bytes _custodianTx
+   * @param _rawTxBundle bytes32[] bundle that takes in concatination of bytes _withdrawalTx, bytes _lastTx, bytes _custodianTx
    * @param _txLengths lengths of transactions in rawTxBundle, used for efficiency purposes
    * @param _txMsgHashes msghashes of transactions in bundle
    + @param _declaredNonce depth of chain of custody from token contract. IMPORTANT TO BE HONEST
@@ -147,8 +152,8 @@ contract DepositContract {
     require(challengeTime[_mintHash] == 0);
     //start challenge
     challengeTime[_mintHash] = now + 10 minutes;
-    challengeNonce[_mintHash] = _declaredNonce;
-    challengeAddress[_mintHash] = lastCustody;
+    challengeEndNonce[_mintHash] = _declaredNonce;
+    challengeAddressClaim[_mintHash] = lastCustody;
     challengeRecipient[_mintHash] = _to;
     challengeStake[_mintHash] = msg.value;
     emit Withdrawal(_to, _mintHash, msg.value, gasPerChallenge.mul(tx.gasprice));
@@ -158,10 +163,22 @@ contract DepositContract {
   function claim(uint256 _mintHash) public {
     require(challengeTime[_mintHash] != 0);
     require(challengeTime[_mintHash] < now);
+    require(challengeNonce[_mintHash] == challengeEndNonce[_mintHash] || challengeNonce[_mintHash] == 0, "either a challenge has started, or has not been proven to endNonce");
     
     challengeRecipient[_mintHash].send((mintHashToAmount[_mintHash] ) + challengeStake[_mintHash]);
 
     mintHashToAmount[_mintHash] = 0;
+    resetChallenge(_mintHash);
+  }
+
+    //honest withdrawal
+  function claimStake(uint256 _mintHash) public {
+    require(challengeTime[_mintHash] != 0);
+    require(challengeTime[_mintHash] < now);
+    require(challengeNonce[_mintHash] != challengeEndNonce[_mintHash] && challengeNonce[_mintHash] != 0, "challenge not initated/withdrawal is honest");
+    
+    challengeRecipient[_mintHash].send(challengeStake[_mintHash]);
+
     resetChallenge(_mintHash);
   }
 
@@ -176,35 +193,61 @@ contract DepositContract {
     RLP.RLPItem[] memory transferTx = rawTxList[0].toRLPItem().toList();
     RLP.RLPItem[] memory custodianTx = rawTxList[1].toRLPItem().toList();
 
+    //TODO: NEED TO CHECK NONCE 
     checkTransferTxAndCustodianTx(transferTx, custodianTx, _txMsgHashes[1]);
-    require(challengeAddress[_mintHash] == parseData(transferTx[5].toData(), 1).toAddress(12), "token needs to be transfered from last proven custody");
+    require(challengeAddressClaim[_mintHash] == parseData(transferTx[5].toData(), 1).toAddress(12), "token needs to be transfered from last proven custody");
     require(_mintHash == parseData(transferTx[5].toData(), 3).toUint(0), "needs to refer to the same mintHash");
     
     _to.send(challengeStake[_mintHash]);
     resetChallenge(_mintHash);
   }
 
-  //TODO: Basic function right now, need to revamp stakes/incentives | need to implement custodian punishment conditions
-  function challengeWithPastCustody(address _to, uint256 _mintHash, bytes32[] _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes) public { 
+  function initiateChallengeWithPastCustody(address _to, uint256 _mintHash, bytes32[] _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes) payable public {
     require(challengeTime[_mintHash] != 0);
     require(challengeTime[_mintHash] > now);
+    require(msg.value >= gasPerChallenge.mul(tx.gasprice).mul(challengeEndNonce[_mintHash]).div(5));
 
     // splits bundle into individual rawTxs
     bytes[] rawTxList;
     splitTxBundle(_rawTxBundle, _txLengths, rawTxList);
 
+    RLP.RLPItem[] memory transferTx = rawTxList[0].toRLPItem().toList();
+    RLP.RLPItem[] memory custodianTx = rawTxList[1].toRLPItem().toList();
+
+    checkTransferTxAndCustodianTx(transferTx, custodianTx, _txMsgHashes[1]);
+    //TODO: save on require statement by not including _mintHash in arguments
+    require(_mintHash == parseData(transferTx[5].toData(), 3).toUint(0), "needs to refer to the same mintHash");
+    require(mintHashToMinter[_mintHash] == parseData(transferTx[5].toData(), 1).toAddress(12), "token needs to be transfered from last proven custody");
+    //moves up root mint referecce to recipient address
+    mintHashToMinter[_mintHash] = parseData(transferTx[5].toData(), 2).toAddress(12);
+
+    challengeStake[_mintHash] += msg.value;
+    challenger[_mintHash] = _to;
+    challengeNonce[_mintHash] = 1;
+  }
+
+  //TODO: need to implement custodian punishment conditions
+  function challengeWithPastCustody(address _to, uint256 _mintHash, bytes32[] _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes) public { 
+    require(challengeTime[_mintHash] != 0);
+    require(challengeTime[_mintHash] > now);
+    require(challengeNonce[_mintHash] > 0);
+
+    // splits bundle into individual rawTxs
+    bytes[] rawTxList;
+    splitTxBundle(_rawTxBundle, _txLengths, rawTxList);
+
+    //get rid of loops
     for (uint i = 0; i < _txLengths.length; i +=2) {
       RLP.RLPItem[] memory transferTx = rawTxList[i].toRLPItem().toList();
       RLP.RLPItem[] memory custodianTx = rawTxList[i + 1].toRLPItem().toList();
 
       checkTransferTxAndCustodianTx(transferTx, custodianTx, _txMsgHashes[i+1]);
+      //TODO: save on require statement by not including _mintHash in arguments
       require(_mintHash == parseData(transferTx[5].toData(), 3).toUint(0), "needs to refer to the same mintHash");
       require(mintHashToMinter[_mintHash] == parseData(transferTx[5].toData(), 1).toAddress(12), "token needs to be transfered from last proven custody");
+      //moves up root mint referecce to recipient address
       mintHashToMinter[_mintHash] = parseData(transferTx[5].toData(), 2).toAddress(12);
     }
-    
-    _to.send(challengeStake[_mintHash]);
-    resetChallenge(_mintHash);
   }
 
   function checkTransferTxAndCustodianTx(RLP.RLPItem[] _transferTx, RLP.RLPItem[] _custodianTx, bytes32 _custodianTxMsgHash) internal {
@@ -246,9 +289,10 @@ contract DepositContract {
   function resetChallenge(uint256 _mintHash) internal {
     challengeStake[_mintHash] = 0;
     challengeRecipient[_mintHash] = 0;
-    challengeAddress[_mintHash] = 0;
-    challengeNonce[_mintHash] = 0;
+    challengeAddressClaim[_mintHash] = 0;
+    challengeEndNonce[_mintHash] = 0;
     challengeTime[_mintHash] = 0; 
+    challengeNonce[_mintHash] = 0;
   }
 
   //ADD ONLY WHEN STAKED
