@@ -60,16 +60,13 @@ contract DepositContract {
   
   event Deposit(address indexed depositer, uint256 amount, uint256 mintHash, address minter);
   event Challenge(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber);
-  event ChallangeResolved(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber, bytes signedTx); 
-  event Refund(address indexed withdrawer, uint256 amount, uint256 indexed blockNumber);
-  event Withdrawal(address indexed withdrawer, uint256 indexed mintHash, uint256 stakedAmount, uint256 test);
-  event Parsed(bytes data, address to, address from);
+  event ChallengeResolved(uint256 mintHash); 
+  event Withdrawal(address indexed withdrawer, uint256 indexed mintHash, uint256 stakedAmount);
 
   bytes4 mintSignature = 0xe32e7aff;
   bytes4 withdrawSignature = 0x2e1a7d4d;
   bytes4 transferFromSignature = 0xfe99049a;
   bytes4 custodianApproveSignature = 0x6e3c045e;
-
   uint256 gasPerChallenge = 206250;
 
   function setTokenContract(address _tokenContract) onlyCustodian statePreStaked public {
@@ -124,7 +121,7 @@ contract DepositContract {
    + @param _declaredNonce depth of chain of custody from token contract. IMPORTANT TO BE HONEST
   */
 
-  // function withdraw(address _to, uint256 _mintHash, bytes _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes, uint256 _declaredNonce) payable external {
+  //For Debugging purposes
   event Test(bytes tx1, bytes tx2, bytes tx3);
   event Trace(bytes out);
   event TraceAddress(address out);
@@ -156,7 +153,7 @@ contract DepositContract {
     challengeAddressClaim[_mintHash] = lastCustody;
     challengeRecipient[_mintHash] = _to;
     challengeStake[_mintHash] = msg.value;
-    emit Withdrawal(_to, _mintHash, msg.value, gasPerChallenge.mul(tx.gasprice));
+    emit Withdrawal(_to, _mintHash, msg.value);
   }
 
   //honest withdrawal
@@ -171,7 +168,7 @@ contract DepositContract {
     resetChallenge(_mintHash);
   }
 
-    //honest withdrawal
+  //claim stake for fraud withdrawal
   function claimStake(uint256 _mintHash) public {
     require(challengeTime[_mintHash] != 0);
     require(challengeTime[_mintHash] < now);
@@ -281,8 +278,6 @@ contract DepositContract {
     require(parseData(_transferTx[5].toData(),4).equal(parseData(_custodianTx[5].toData(),2)), "nonces do not match");
   }
 
-
-
   function splitTxBundle(bytes32[] _rawTxBundle, uint256[] _txLengths, bytes[] storage _rawTxList) internal {
     uint256 txStartPosition = 0;
     for (uint i = 0; i < _txLengths.length; i++) {
@@ -313,79 +308,10 @@ contract DepositContract {
     challengeEndNonce[_mintHash] = 0;
     challengeTime[_mintHash] = 0; 
     challengeNonce[_mintHash] = 0;
+    emit ChallengeResolved(_mintHash);
   }
-
-  //ADD ONLY WHEN STAKED
-  // function submitFraud(bytes rawTx, bytes32 msgHash) public {
-  //   Transaction memory parsedTx = parse(rawTx, msgHash);
-  //   require(keccak256(parsedTx.from) == keccak256(custodian));
-  //   require(keccak256(parsedTx.to) == keccak256(tokenContract));
-  //   require(verifyMintTxParams(parsedTx.data) == 0);
-  //   //penalise custodian, possibly change to transfer against reentrancy
-  //   msg.sender.send(100);
-  // }
 
   /* Util functions --------------------------------------------------*/
-  // function splitRawTxBundle(bytes _rawTxBundle, uint256 _start, uint256 _end) public returns ()
-  Transaction public testTx;
-
-  function parse(bytes _rawTx, bytes32 _msgHash) public returns (    
-    uint nonce,
-    uint gasPrice,
-    uint gasLimit,
-    address to,
-    uint value,
-    bytes data,
-    uint8 v,
-    bytes32 r,
-    bytes32 s,
-    address from
-    ) {
-    RLP.RLPItem[] memory list = _rawTx.toRLPItem().toList();
-    // can potentially insert: if (signedTransaction.length !== 9) { throw new Error('invalid transaction'); } items()
-    nonce = list[0].toUint();
-    gasPrice = list[1].toUint();
-    gasLimit = list[2].toUint();
-    to = list[3].toAddress();
-    if (!list[4].isEmpty()) {
-      value = list[4].toUint();
-    }
-    if (!list[5].isEmpty()) {
-      data = list[5].toData();
-    }
-    v = uint8(list[6].toUint());
-    r = list[7].toBytes32(); 
-    s = list[8].toBytes32();
-    from = ecrecover(_msgHash, 28, r, s);
-    emit Parsed(data, to, from);
-    return (
-    nonce,
-    gasPrice,
-    gasLimit,
-    to,
-    value,
-    data,
-    v,
-    r,
-    s,
-    from);
-  }
-
-  //hashes appropriate data then verifies against depositLog
-  // function verifyMintTxParams(bytes data) public returns (uint8) {
-  //   assert(data.slice(0,10).equal(mintSignature));
-  //   // return depositLog[keccak256(data.slice(10, 266))];
-  // }
-
-  //NEEDS TESTING
-  // function parseXYZ(bytes data) public returns (uint X, address Y, uint Z, uint txNonce) {
-  //   require(data.slice(0,10).equal(mintSignature));
-  //   X = data.slice(10, 74).toUint(0);
-  //   Y = data.slice(74, 138).toAddress(0);
-  //   Z = data.slice(138, 202).toUint(0);
-  //   txNonce = data.slice(202, 266).toUint(0);
-  //   return (X, Y, Z, txNonce);
-  // }
 
   function parseData(bytes data, uint256 i) internal returns (bytes) {
     if (i == 0) {
@@ -400,8 +326,6 @@ contract DepositContract {
   function bytes32ToBytes(bytes32 _data) internal pure returns (bytes) {
     return abi.encodePacked(_data);
   }
-
-
 
   function bytesToBytes32(bytes b, uint offset) private pure returns (bytes32) {
     bytes32 out;
@@ -439,8 +363,6 @@ contract DepositContract {
         b := m
     }
   }
-
-  
 
   function ecrecovery(bytes32 hash, bytes sig) public returns (address) {
     bytes32 r;
