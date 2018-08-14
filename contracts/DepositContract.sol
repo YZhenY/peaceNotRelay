@@ -261,6 +261,7 @@ contract DepositContract {
     checkTransferTxAndCustodianTx(transferTx2, custodianTx2, _txMsgHashes[3]);
     require(_mintHash == parseData(transferTx[5].toData(), 3).toUint(0), "needs to refer to the same mintHash");
     require(_mintHash == parseData(transferTx2[5].toData(), 3).toUint(0), "needs to refer to the same mintHash");
+    require(parseData(transferTx2[5].toData(), 4).toUint(0) == parseData(transferTx[5].toData(), 4).toUint(0), "needs to refer to the same nonce");
 
     //TODO: how much to punish custodian??? can we pay out the stake instead of just burning it, pause contract??
     stakedAmount = 0;
