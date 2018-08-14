@@ -1,5 +1,4 @@
 pragma solidity ^0.4.24;
-pragma experimental ABIEncoderV2;
 
 import "./SafeMath.sol";
 import "./Ownable.sol";
@@ -48,12 +47,8 @@ contract TokenContract is ERC721BasicToken {
   }
 
   event Mint(uint256 amount, address indexed depositedTo, uint256 nonce, bytes32 mintHash);
-  event Challenge(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber);
-  event ChallangeResolved(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber, bytes signedTx); 
-  event Refund(address indexed withdrawer, uint256 amount, uint256 indexed blockNumber);
   event Withdraw(uint256 tokenId);
-  event Parsed(bytes data, address to, address from);
-
+  event TransferRequest(address indexed from, address indexed to, uint256 indexed _tokenId, bytes32 approvalHash);
 
   function setDepositContract(address _depositContract) onlyCustodian statePreStaked public {
     depositContract = _depositContract;
@@ -94,7 +89,6 @@ contract TokenContract is ERC721BasicToken {
 
 
   
-  event TransferRequest(address indexed from, address indexed to, uint256 indexed _tokenId, bytes32 approvalHash);
   
   /**
    * @dev Requests transfer of ownership of a given token ID to another address
@@ -122,7 +116,6 @@ contract TokenContract is ERC721BasicToken {
     //TODO: Double check if hash is secure, no chance of collision
     bytes32 approvalHash = keccak256(uint256ToBytes(_tokenId).concat(uint256ToBytes(_declaredNonce)));
     custodianApproval[approvalHash] = _to;
-
     emit TransferRequest(_from, _to, _tokenId, approvalHash);
   }
 
@@ -142,10 +135,13 @@ contract TokenContract is ERC721BasicToken {
     clearCustodianApproval(keccak256(uint256ToBytes(_tokenId).concat(uint256ToBytes(_declaredNonce))));
   }
 
+
+  /* View functions --------------------------------------------------*/
   function viewTransferRequest(bytes32 _approvalHash) public view returns(address) {
     return custodianApproval[_approvalHash];
   }
 
+  /* Util functions --------------------------------------------------*/
   /**
    * @dev Internal function to clear current custodian approval of a given token ID
    * @param _approvalHash bytes32 ID of the token to be transferred
@@ -155,50 +151,6 @@ contract TokenContract is ERC721BasicToken {
       custodianApproval[_approvalHash] = address(0);
     }
   }
-
-  
-
-
-  /* Util functions --------------------------------------------------*/
-  // function parse(bytes rawTx, bytes32 msgHash) public returns (Transaction transaction) {
-  //   RLP.RLPItem[] memory list = rawTx.toRLPItem().toList();
-  //   // can potentially insert: if (signedTransaction.length !== 9) { throw new Error('invalid transaction'); } items()
-  //   transaction.nonce = list[0].toUint();
-  //   transaction.gasPrice = list[1].toUint();
-  //   transaction.gasLimit = list[2].toUint();
-  //   transaction.to = list[3].toAddress();
-  //   if (!list[4].isEmpty()) {
-  //     transaction.value = list[4].toUint();
-  //   }
-  //   if (!list[5].isEmpty()) {
-  //     transaction.data = list[5].toData();
-  //   }
-  //   transaction.v = uint8(list[6].toUint());
-  //   transaction.r = list[7].toBytes32(); 
-  //   transaction.s = list[8].toBytes32();
-  //   transaction.from = ecrecover(msgHash, 28, transaction.r, transaction.s);
-  //   emit Parsed(transaction.data, transaction.to, transaction.from);
-  //   //for debbugging
-  //   testTx = transaction;
-  //   return transaction;
-  // }
-
-
-  //hashes appropriate data then verifies against txLog
-  // function verifyMintTxParams(bytes data) public returns (uint8) {
-  //   assert(data.slice(0,10).equal(mintSignature));
-  //   return txLog[keccak256(data.slice(10, 266))];
-  // }
-
-  //NEEDS TESTING
-  // function parseXYZ(bytes data) public returns (uint X, address Y, uint Z, uint txNonce) {
-  //   require(data.slice(0,10).equal(mintSignature));
-  //   X = data.slice(10, 74).toUint(0);
-  //   Y = data.slice(74, 138).toAddress(0);
-  //   Z = data.slice(138, 202).toUint(0);
-  //   txNonce = data.slice(202, 266).toUint(0);
-  //   return (X, Y, Z, txNonce);
-  // }
 
   function bytesToBytes32(bytes b, uint offset) private pure returns (bytes32) {
     bytes32 out;
