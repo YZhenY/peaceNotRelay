@@ -64,7 +64,6 @@ contract TokenContract is ERC721BasicToken {
   uint32 public mintNonce = 0;
 
   function mint(uint256 _value, address _to) public {
-
     //might have to log the value, to, Z details
     bytes memory value = uint256ToBytes(_value);
     bytes memory to = addressToBytes(_to);
@@ -86,9 +85,6 @@ contract TokenContract is ERC721BasicToken {
   /* ERC721 Related Functions --------------------------------------------------*/
   // Mapping from token ID to approved address
   mapping (bytes32 => address) public custodianApproval;
-
-
-  
   
   /**
    * @dev Requests transfer of ownership of a given token ID to another address
