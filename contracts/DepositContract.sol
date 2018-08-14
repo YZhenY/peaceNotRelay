@@ -83,7 +83,7 @@ contract DepositContract {
 
   function finalizeStake () onlyCustodian statePreStaked public {
     stakedAmount = address(this).balance;
-    depositCap = address(this).balance.div(2);
+    depositCap = address(this).balance;
     depositedAmount = 0;
     contractState = "staked";
   }
@@ -178,7 +178,7 @@ contract DepositContract {
     require(challengeNonce[_mintHash] != challengeEndNonce[_mintHash] && challengeNonce[_mintHash] != 0, "challenge not initated/withdrawal is honest");
     
     challengeRecipient[_mintHash].send(challengeStake[_mintHash]);
-
+    
     resetChallenge(_mintHash);
   }
 
@@ -248,6 +248,26 @@ contract DepositContract {
       //moves up root mint referecce to recipient address
       mintHashToMinter[_mintHash] = parseData(transferTx[5].toData(), 2).toAddress(12);
     }
+  }
+
+  function submitCustodianDoubleSign(address _to, uint256 _mintHash, bytes32[] _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes) public {
+    
+    bytes[] rawTxList;
+    splitTxBundle(_rawTxBundle, _txLengths, rawTxList);
+
+    RLP.RLPItem[] memory transferTx = rawTxList[0].toRLPItem().toList();
+    RLP.RLPItem[] memory custodianTx = rawTxList[1].toRLPItem().toList();
+    RLP.RLPItem[] memory transferTx2 = rawTxList[2].toRLPItem().toList();
+    RLP.RLPItem[] memory custodianTx2 = rawTxList[3].toRLPItem().toList();
+
+    checkTransferTxAndCustodianTx(transferTx, custodianTx, _txMsgHashes[1]);
+    checkTransferTxAndCustodianTx(transferTx2, custodianTx2, _txMsgHashes[3]);
+    require(_mintHash == parseData(transferTx[5].toData(), 3).toUint(0), "needs to refer to the same mintHash");
+    require(_mintHash == parseData(transferTx2[5].toData(), 3).toUint(0), "needs to refer to the same mintHash");
+
+    //TODO: how much to punish custodian??? can we pay out the stake instead of just burning it, pause contract??
+    stakedAmount = 0;
+    depositCap = 0;
   }
 
   function checkTransferTxAndCustodianTx(RLP.RLPItem[] _transferTx, RLP.RLPItem[] _custodianTx, bytes32 _custodianTxMsgHash) internal {
