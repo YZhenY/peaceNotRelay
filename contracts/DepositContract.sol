@@ -107,8 +107,13 @@ contract DepositContract {
   //mintHashToChallengerAddress
   mapping (uint256 => address) challenger;
 
-
- /*
+  //For Debugging purposes
+  event Test(bytes tx1, bytes tx2, bytes tx3);
+  event Trace(bytes out);
+  event TraceAddress(address out);
+  event Trace32(bytes32 out);
+  event TraceUint256(uint256 out);
+  /*
   /**
    * @dev Initiates a withdrawal process. Starts the challenge period 
    * Requires the msg sender to stake a payment (payable function)
@@ -120,13 +125,6 @@ contract DepositContract {
    * @param _txMsgHashes msghashes of transactions in bundle
    + @param _declaredNonce depth of chain of custody from token contract. IMPORTANT TO BE HONEST
   */
-
-  //For Debugging purposes
-  event Test(bytes tx1, bytes tx2, bytes tx3);
-  event Trace(bytes out);
-  event TraceAddress(address out);
-  event Trace32(bytes32 out);
-  event TraceUint256(uint256 out);
   function withdraw(address _to, uint256 _mintHash, bytes32[] _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes, uint256 _declaredNonce) public payable  {
     // TODO:  decern challenge time, 
     //check amount to stake
@@ -156,7 +154,11 @@ contract DepositContract {
     emit Withdrawal(_to, _mintHash, msg.value);
   }
 
-  //honest withdrawal
+  /*
+  /**
+   * @dev For withdrawee to claims honest withdrawal
+   * @param _mintHash uint256 ID of token on TokenContract
+  */
   function claim(uint256 _mintHash) public {
     require(challengeTime[_mintHash] != 0);
     require(challengeTime[_mintHash] < now);
@@ -168,7 +170,11 @@ contract DepositContract {
     resetChallenge(_mintHash);
   }
 
-  //claim stake for fraud withdrawal
+  /*
+  /**
+   * @dev For challenger to claim stake on fradulent challenge (challengeWithPastCustody())
+   * @param _mintHash uint256 ID of token on TokenContract
+  */
   function claimStake(uint256 _mintHash) public {
     require(challengeTime[_mintHash] != 0);
     require(challengeTime[_mintHash] < now);
@@ -178,7 +184,16 @@ contract DepositContract {
     
     resetChallenge(_mintHash);
   }
-
+  /*
+  /**
+   * @dev Challenges with future custody using a transaction proving transfer of token
+   * once future custody is proven, it ends pays the challenger
+   * @param _to address to send stake given success
+   * @param _mintHash uint256 ID of token on TokenContract
+   * @param _rawTxBundle bytes32[] bundle that takes in concatination of bytes _transactionTx, bytes _custodianTx
+   * @param _txLengths lengths of transactions in rawTxBundle, used for efficiency purposes
+   * @param _txMsgHashes msghashes of transactions in bundle
+  */
   function challengeWithFutureCustody(address _to, uint256 _mintHash, bytes32[] _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes) public { 
     require(challengeTime[_mintHash] != 0);
     require(challengeTime[_mintHash] > now);
@@ -199,6 +214,18 @@ contract DepositContract {
     resetChallenge(_mintHash);
   }
 
+/*
+  /**
+   * @dev Initiates a challenge with past custody using a chain of custody leading to the declared nonce
+   * once challenge period ends. It should be designed such that it punishes challenging an honest withdrawal and incentivises challenging a fradulent one
+   * requires challenger to stake.
+   // TODO: extend challenge period when called
+   * @param _to address to send stake given success
+   * @param _mintHash uint256 ID of token on TokenContract
+   * @param _rawTxBundle bytes32[] bundle that takes in concatination of bytes _transactionTx, bytes _custodianTx
+   * @param _txLengths lengths of transactions in rawTxBundle, used for efficiency purposes
+   * @param _txMsgHashes msghashes of transactions in bundle
+  */
   function initiateChallengeWithPastCustody(address _to, uint256 _mintHash, bytes32[] _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes) payable public {
     require(challengeTime[_mintHash] != 0);
     require(challengeTime[_mintHash] > now);
@@ -223,7 +250,17 @@ contract DepositContract {
     challengeNonce[_mintHash] = 1;
   }
 
-  //TODO: need to implement custodian punishment conditions
+  /*
+  /**
+   * @dev Add to the chain of custody leading to the declared nonce
+   * once challenge period ends claim funds through claimStake()
+   // TODO: remove loops (less efficient then single calls)
+   * @param _to address to send stake given success
+   * @param _mintHash uint256 ID of token on TokenContract
+   * @param _rawTxBundle bytes32[] bundle that takes in concatination of bytes _transactionTx, bytes _custodianTx
+   * @param _txLengths lengths of transactions in rawTxBundle, used for efficiency purposes
+   * @param _txMsgHashes msghashes of transactions in bundle
+  */
   function challengeWithPastCustody(address _to, uint256 _mintHash, bytes32[] _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes) public { 
     require(challengeTime[_mintHash] != 0);
     require(challengeTime[_mintHash] > now);
@@ -247,6 +284,17 @@ contract DepositContract {
     }
   }
 
+  /*
+  /**
+   * @dev In the existance of two mintHashes with the same nonce indicates the presence of double spending
+   * Burn the custodian for a double spend
+   // TODO: how much to punish custodian??? can we pay out the stake instead of just burning it, pause contract??
+   * @param _to address to send stake given success
+   * @param _mintHash uint256 ID of token on TokenContract
+   * @param _rawTxBundle bytes32[] bundle that takes in concatination of bytes _transactionTx, bytes _custodianTx
+   * @param _txLengths lengths of transactions in rawTxBundle, used for efficiency purposes
+   * @param _txMsgHashes msghashes of transactions in bundle
+  */
   function submitCustodianDoubleSign(address _to, uint256 _mintHash, bytes32[] _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes) public {
     
     bytes[] rawTxList;
@@ -268,6 +316,13 @@ contract DepositContract {
     depositCap = 0;
   }
 
+  /*
+  /**
+   * @dev Check the validity of the transfer and custodian transaction
+   * @param  _transferTx RLP item array representing transferTx
+   * @param _mintHash RLP item array representing corresponding custodianTx
+   * @param _rawTxBundle bytes32 _custodianTx msgHash
+  */
   function checkTransferTxAndCustodianTx(RLP.RLPItem[] _transferTx, RLP.RLPItem[] _custodianTx, bytes32 _custodianTxMsgHash) internal {
     require(_transferTx[3].toAddress() == tokenContract);
     require(_custodianTx[3].toAddress() == tokenContract);
@@ -279,6 +334,14 @@ contract DepositContract {
     require(parseData(_transferTx[5].toData(),4).equal(parseData(_custodianTx[5].toData(),2)), "nonces do not match");
   }
 
+  /*
+  /**
+   * @dev Splits a rawTxBundle received to its individual transactions. 
+   * Necessary due to limitation in amount of data transferable through solidity arguments
+   * @param  _transferTx RLP item array representing transferTx
+   * @param _mintHash RLP item array representing corresponding custodianTx
+   * @param _rawTxBundle bytes32 _custodianTx msgHash
+  */
   function splitTxBundle(bytes32[] _rawTxBundle, uint256[] _txLengths, bytes[] storage _rawTxList) internal {
     uint256 txStartPosition = 0;
     for (uint i = 0; i < _txLengths.length; i++) {
@@ -288,7 +351,14 @@ contract DepositContract {
     }
   }
 
-
+  /*
+  /**
+   * @dev Splits a rawTxBundle received to its individual transactions. 
+   * Necessary due to limitation in amount of data transferable through solidity arguments
+   * @param  _transferTx RLP item array representing transferTx
+   * @param _mintHash RLP item array representing corresponding custodianTx
+   * @param _rawTxBundle bytes32 _custodianTx msgHash
+  */
   //TODO: MAKE MORE EFFICENT 
   function sliceBytes32Arr(bytes32[] _bytes32ArrBundle, uint256 _startPosition, uint256 _length) internal returns (bytes) {
     bytes memory out;
