@@ -1,11 +1,11 @@
 pragma solidity ^0.4.24;
 
-import "./SafeMath.sol";
-import "./Ownable.sol";
-import "./RLP.sol";
-import "./BytesLib.sol";
-import "./ERC721Basic.sol";
-import "./ERC721BasicToken.sol";
+import "./dependencies/SafeMath.sol";
+import "./dependencies/Ownable.sol";
+import "./dependencies/RLP.sol";
+import "./dependencies/BytesLib.sol";
+import "./dependencies/ERC721Basic.sol";
+import "./dependencies/ERC721BasicToken.sol";
 
 contract TokenContract is ERC721BasicToken {
   using SafeMath for uint256;

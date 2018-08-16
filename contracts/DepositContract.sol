@@ -1,10 +1,10 @@
 pragma solidity ^0.4.24;
 // pragma experimental ABIEncoderV2;
 
-import "./SafeMath.sol";
-import "./Ownable.sol";
-import "./RLP.sol";
-import "./BytesLib.sol";
+import "./dependencies/SafeMath.sol";
+import "./dependencies/Ownable.sol";
+import "./dependencies/RLP.sol";
+import "./dependencies/BytesLib.sol";
 
 contract DepositContract {
   using SafeMath for uint256;
