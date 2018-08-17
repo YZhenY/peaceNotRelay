@@ -6,6 +6,7 @@ import "./dependencies/RLP.sol";
 import "./dependencies/BytesLib.sol";
 import "./dependencies/ERC721Basic.sol";
 import "./dependencies/ERC721BasicToken.sol";
+import "./dependencies/AddressUtils.sol";
 
 contract TokenContract is ERC721BasicToken {
   using SafeMath for uint256;
@@ -85,7 +86,7 @@ contract TokenContract is ERC721BasicToken {
   /* ERC721 Related Functions --------------------------------------------------*/
   // Mapping from token ID to approved address
   mapping (bytes32 => address) public custodianApproval;
-  
+
   /**
    * @dev Requests transfer of ownership of a given token ID to another address
    * Usage of this method is discouraged, use `safeTransferFrom` whenever possible
