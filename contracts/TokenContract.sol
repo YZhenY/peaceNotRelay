@@ -1,12 +1,12 @@
 pragma solidity ^0.4.24;
-pragma experimental ABIEncoderV2;
 
-import "./SafeMath.sol";
-import "./Ownable.sol";
-import "./RLP.sol";
-import "./BytesLib.sol";
-import "./ERC721Basic.sol";
-import "./ERC721BasicToken.sol";
+import "./dependencies/SafeMath.sol";
+import "./dependencies/Ownable.sol";
+import "./dependencies/RLP.sol";
+import "./dependencies/BytesLib.sol";
+import "./dependencies/ERC721Basic.sol";
+import "./dependencies/ERC721BasicToken.sol";
+import "./dependencies/AddressUtils.sol";
 
 contract TokenContract is ERC721BasicToken {
   using SafeMath for uint256;
@@ -48,12 +48,14 @@ contract TokenContract is ERC721BasicToken {
   }
 
   event Mint(uint256 amount, address indexed depositedTo, uint256 nonce, bytes32 mintHash);
+<<<<<<< HEAD
   event Challenge(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber);
   event ChallangeResolved(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber, bytes signedTx);
   event Refund(address indexed withdrawer, uint256 amount, uint256 indexed blockNumber);
+=======
+>>>>>>> 4fa8e645c8f6503c82a31f24d27f9a6ce34766ab
   event Withdraw(uint256 tokenId);
-  event Parsed(bytes data, address to, address from);
-
+  event TransferRequest(address indexed from, address indexed to, uint256 indexed _tokenId, bytes32 approvalHash);
 
   function setDepositContract(address _depositContract) onlyCustodian statePreStaked public {
     depositContract = _depositContract;
@@ -69,7 +71,6 @@ contract TokenContract is ERC721BasicToken {
   uint32 public mintNonce = 0;
 
   function mint(uint256 _value, address _to) public {
-
     //might have to log the value, to, Z details
     bytes memory value = uint256ToBytes(_value);
     bytes memory to = addressToBytes(_to);
@@ -90,63 +91,85 @@ contract TokenContract is ERC721BasicToken {
 
   /* ERC721 Related Functions --------------------------------------------------*/
   // Mapping from token ID to approved address
-  mapping (uint256 => address) public custodianApproval;
+  mapping (bytes32 => address) public custodianApproval;
 
+<<<<<<< HEAD
 
 
   event TransferRequest(address indexed from, address indexed to, uint256 indexed _tokenId);
 
+=======
+>>>>>>> 4fa8e645c8f6503c82a31f24d27f9a6ce34766ab
   /**
-   * @dev Transfers the ownership of a given token ID to another address
+   * @dev Requests transfer of ownership of a given token ID to another address
    * Usage of this method is discouraged, use `safeTransferFrom` whenever possible
    * Requires the msg sender to be the owner, approved, or operator
    * @param _from current owner of the token
    * @param _to address to receive the ownership of the given token ID
    * @param _tokenId uint256 ID of the token to be transferred
+   * @param _declaredNonce uint256 nonce, depth of transaction
   */
   function transferFromTokenContract(
     address _from,
     address _to,
-    uint256 _tokenId
+    uint256 _tokenId,
+    uint256 _declaredNonce
   )
     public
   {
     require(isApprovedOrOwner(msg.sender, _tokenId));
     require(_from != address(0));
     require(_to != address(0));
+    //TODO: do we need to check if declared nonce constantly increases
 
     clearApproval(_from, _tokenId);
-    custodianApproval[_tokenId] = _to;
-
-    emit TransferRequest(_from, _to, _tokenId);
+    //TODO: Double check if hash is secure, no chance of collision
+    bytes32 approvalHash = keccak256(uint256ToBytes(_tokenId).concat(uint256ToBytes(_declaredNonce)));
+    custodianApproval[approvalHash] = _to;
+    emit TransferRequest(_from, _to, _tokenId, approvalHash);
   }
 
-  function custodianApprove(uint256 _tokenId) onlyCustodian public {
+  function custodianApprove(uint256 _tokenId, uint256 _declaredNonce) onlyCustodian public {
     require(exists(_tokenId));
-    address _to = custodianApproval[_tokenId];
+    bytes32 approvalHash = keccak256(uint256ToBytes(_tokenId).concat(uint256ToBytes(_declaredNonce)));
+    address _to = custodianApproval[approvalHash];
     address _from = ownerOf(_tokenId);
     removeTokenFrom(_from, _tokenId);
     addTokenTo(_to, _tokenId);
     emit Transfer(_from, _to, _tokenId);
-    clearCustodianApproval(_tokenId);
+    clearCustodianApproval(approvalHash);
   }
 
+<<<<<<< HEAD
   function revertTransfer(uint256 _tokenId) public {
     require(isApprovedOrOwner(msg.sender, _tokenId));
 
     clearCustodianApproval(_tokenId);
+=======
+  function revertTransfer(uint256 _tokenId, uint256 _declaredNonce) public {
+    require(isApprovedOrOwner(msg.sender, _tokenId), "no approval/ not owner");
+    clearCustodianApproval(keccak256(uint256ToBytes(_tokenId).concat(uint256ToBytes(_declaredNonce))));
   }
 
+
+  /* View functions --------------------------------------------------*/
+  function viewTransferRequest(bytes32 _approvalHash) public view returns(address) {
+    return custodianApproval[_approvalHash];
+>>>>>>> 4fa8e645c8f6503c82a31f24d27f9a6ce34766ab
+  }
+
+  /* Util functions --------------------------------------------------*/
   /**
    * @dev Internal function to clear current custodian approval of a given token ID
-   * @param _tokenId uint256 ID of the token to be transferred
+   * @param _approvalHash bytes32 ID of the token to be transferred
    */
-  function clearCustodianApproval(uint256 _tokenId) internal {
-    if (custodianApproval[_tokenId] != address(0)) {
-      custodianApproval[_tokenId] = address(0);
+  function clearCustodianApproval(bytes32 _approvalHash) internal {
+    if (custodianApproval[_approvalHash] != address(0)) {
+      custodianApproval[_approvalHash] = address(0);
     }
   }
 
+<<<<<<< HEAD
 
 
 
@@ -191,6 +214,8 @@ contract TokenContract is ERC721BasicToken {
   //   return (X, Y, Z, txNonce);
   // }
 
+=======
+>>>>>>> 4fa8e645c8f6503c82a31f24d27f9a6ce34766ab
   function bytesToBytes32(bytes b, uint offset) private pure returns (bytes32) {
     bytes32 out;
     for (uint i = 0; i < 32; i++) {

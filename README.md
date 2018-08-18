@@ -1,3 +1,7 @@
+#NOT UPDATED REFER TO
+
+https://www.notion.so/akombalabs/peace-relay-revamped-46f863a9a3074be494e6b6c6424e7dc3
+
 # peaceNotRelay
 
 This is a bridge establishing interoperability between Ethereum and Ethereum Classic in a trustless, low-cost way. Instead of relaying block headers from one chain to the other, it uses a trustless Custodian who verifies transactions across the two chains.  The bridge architecture consists of five main components, which are simply symmetrically replicated to get a two-way bridge.

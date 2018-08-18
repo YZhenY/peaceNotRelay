@@ -1,24 +1,21 @@
 pragma solidity ^0.4.24;
 
 import "./ERC721Basic.sol";
-import "./ERC721Receiver.sol";
+
 import "./SafeMath.sol";
 import "./AddressUtils.sol";
-import "./SupportsInterfaceWithLookup.sol";
 
 
+//EDITED TO REMOVE SUPPORT INTERFACE AND CHECK FUNC
+//REMOVED TRANSFER?SAFE TRNASFER FUNC
 /**
  * @title ERC721 Non-Fungible Token Standard basic implementation
  * @dev see https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md
  */
-contract ERC721BasicToken is SupportsInterfaceWithLookup, ERC721Basic {
+contract ERC721BasicToken is ERC721Basic {
 
   using SafeMath for uint256;
   using AddressUtils for address;
-
-  // Equals to `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`
-  // which can be also obtained as `ERC721Receiver(0).onERC721Received.selector`
-  bytes4 private constant ERC721_RECEIVED = 0x150b7a02;
 
   // Mapping from token ID to owner
   mapping (uint256 => address) internal tokenOwner;
@@ -35,9 +32,7 @@ contract ERC721BasicToken is SupportsInterfaceWithLookup, ERC721Basic {
   constructor()
     public
   {
-    // register the supported interfaces to conform to ERC721 via ERC165
-    _registerInterface(InterfaceId_ERC721);
-    _registerInterface(InterfaceId_ERC721Exists);
+
   }
 
   /**
@@ -124,80 +119,6 @@ contract ERC721BasicToken is SupportsInterfaceWithLookup, ERC721Basic {
     returns (bool)
   {
     return operatorApprovals[_owner][_operator];
-  }
-
-  /**
-   * @dev Transfers the ownership of a given token ID to another address
-   * Usage of this method is discouraged, use `safeTransferFrom` whenever possible
-   * Requires the msg sender to be the owner, approved, or operator
-   * @param _from current owner of the token
-   * @param _to address to receive the ownership of the given token ID
-   * @param _tokenId uint256 ID of the token to be transferred
-  */
-  function transferFrom(
-    address _from,
-    address _to,
-    uint256 _tokenId
-  )
-    public
-  {
-    require(isApprovedOrOwner(msg.sender, _tokenId));
-    require(_from != address(0));
-    require(_to != address(0));
-
-    clearApproval(_from, _tokenId);
-    removeTokenFrom(_from, _tokenId);
-    addTokenTo(_to, _tokenId);
-
-    emit Transfer(_from, _to, _tokenId);
-  }
-
-  /**
-   * @dev Safely transfers the ownership of a given token ID to another address
-   * If the target address is a contract, it must implement `onERC721Received`,
-   * which is called upon a safe transfer, and return the magic value
-   * `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`; otherwise,
-   * the transfer is reverted.
-   *
-   * Requires the msg sender to be the owner, approved, or operator
-   * @param _from current owner of the token
-   * @param _to address to receive the ownership of the given token ID
-   * @param _tokenId uint256 ID of the token to be transferred
-  */
-  function safeTransferFrom(
-    address _from,
-    address _to,
-    uint256 _tokenId
-  )
-    public
-  {
-    // solium-disable-next-line arg-overflow
-    safeTransferFrom(_from, _to, _tokenId, "");
-  }
-
-  /**
-   * @dev Safely transfers the ownership of a given token ID to another address
-   * If the target address is a contract, it must implement `onERC721Received`,
-   * which is called upon a safe transfer, and return the magic value
-   * `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`; otherwise,
-   * the transfer is reverted.
-   * Requires the msg sender to be the owner, approved, or operator
-   * @param _from current owner of the token
-   * @param _to address to receive the ownership of the given token ID
-   * @param _tokenId uint256 ID of the token to be transferred
-   * @param _data bytes data to send along with a safe transfer check
-   */
-  function safeTransferFrom(
-    address _from,
-    address _to,
-    uint256 _tokenId,
-    bytes _data
-  )
-    public
-  {
-    transferFrom(_from, _to, _tokenId);
-    // solium-disable-next-line arg-overflow
-    require(checkAndCallSafeTransfer(_from, _to, _tokenId, _data));
   }
 
   /**
@@ -305,8 +226,6 @@ contract ERC721BasicToken is SupportsInterfaceWithLookup, ERC721Basic {
     if (!_to.isContract()) {
       return true;
     }
-    bytes4 retval = ERC721Receiver(_to).onERC721Received(
-      msg.sender, _from, _tokenId, _data);
-    return (retval == ERC721_RECEIVED);
+
   }
 }

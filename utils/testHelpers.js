@@ -1,5 +1,6 @@
+var Promise = require('bluebird');
 module.exports = web3 => {
-
+  // web3.currentProvider.send = Promise.promisify(web3.currentProvider.send);
   var jsonrpc = '2.0'
   var id = 0
   var send = (method, params = []) => web3.currentProvider.send({ id, jsonrpc, method, params });
