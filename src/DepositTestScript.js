@@ -46,14 +46,6 @@ async function getAddr(_txHash){
     console.log(addr)
 }
 
-// deployContract(deployTransaction)
-getAddr('0xfadf7982bbde2654be60d1bdb8b86d5dd895e4b00af6b32fe1050225a87b94de')
-
-// var sendPromise = wallet.sendTransaction(deployTransaction);
-// sendPromise.then(function(err,transaction) {
-//     console.log(err,transaction);
-// });
-
 // var depositContractAddress = '0x24f1a771C1918132f02584222033334e56fD9f61'
 // var depositContract = new ethers.Contract(depositContractAddress, abi, wallet);
 
@@ -82,6 +74,11 @@ async function transferCall() {
 
 //----------------------------------------------------------------------------------
 //Testing functions
+
+// deployContract(deployTransaction)
+getAddr('0xebf71bc0b63d64e33fbceaf6998f924899b17bc36c7053a29e0a23cb723c6c41')
+
+
 var transferMethodID = '0xb22781db7a1c1a87b86b7215e93e2ad8791bb8cc984291af99060086f14f0b4a';
 var tokenIDHex = '0x9744663e9ce4a436cbd897d62862050ac115b19e8069f51b444cafc7b756b6ba';
 var tokenIDInt = '68420091402644995921492871103118945056506363385934839950840550634224801461946';

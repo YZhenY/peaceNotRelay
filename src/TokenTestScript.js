@@ -22,15 +22,6 @@ var privateKey = '0x13410a539b4fdb8dabde37ff8d687cc23eea64ab11eaf348a2fd775ba71a
 var publicAddress = '0xC33Bdb8051D6d2002c0D80A1Dd23A1c9d9FC26E4';
 var wallet = new ethers.Wallet(privateKey, provider);
 
-// //specify TokenContract
-// var tokenContractAddress = '0xF22999d07Bf99C75112C292AB1B399423Cb770ce';
-// var jsonFile = '../Contracts/tokenContract.json';
-// var parsed = JSON.parse(fs.readFileSync(jsonFile));
-// //var abi = parsed.abi
-// var bytecodeFile = '../Contracts/tokenContract.txt';
-// var bytecode = fs.readFileSync(bytecodeFile, "utf-8");
-
-
 var deployTransaction = ethers.Contract.getDeployTransaction("0x"+bytecode, abi,
     publicAddress);
 
@@ -45,11 +36,6 @@ async function getAddr(_txHash){
     var addr = await tx['contractAddress']
     console.log(addr)
 }
-
-
-// deployContract(deployTransaction)
-getAddr('0xb921b87eac4e9abadbd514f0cb3e4e934e8d02592a22437909a66f3021d7710c')
-
 
 // var sendPromise = wallet.sendTransaction(deployTransaction);
 // sendPromise.then(function(err,transaction) {
@@ -93,6 +79,9 @@ async function transferCall() {
 var transferMethodID = '0xb22781db7a1c1a87b86b7215e93e2ad8791bb8cc984291af99060086f14f0b4a';
 var tokenIDHex = '0x9744663e9ce4a436cbd897d62862050ac115b19e8069f51b444cafc7b756b6ba';
 var tokenIDInt = '68420091402644995921492871103118945056506363385934839950840550634224801461946';
+
+// deployContract(deployTransaction)
+getAddr('0x49ad03cb89c9519e532142f4b526d948b0ce8ceafcd1cce12914041739ce5786')
 
 // transferHistory('0x9744663e9ce4a436cbd897d62862050ac115b19e8069f51b444cafc7b756b6ba');
 // ownerOfCall('56064289943568641797652870540193695909662562700408150778951987980509060591558')

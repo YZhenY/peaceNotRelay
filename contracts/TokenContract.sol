@@ -48,12 +48,10 @@ contract TokenContract is ERC721BasicToken {
   }
 
   event Mint(uint256 amount, address indexed depositedTo, uint256 nonce, bytes32 mintHash);
-<<<<<<< HEAD
   event Challenge(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber);
   event ChallangeResolved(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber, bytes signedTx);
   event Refund(address indexed withdrawer, uint256 amount, uint256 indexed blockNumber);
-=======
->>>>>>> 4fa8e645c8f6503c82a31f24d27f9a6ce34766ab
+
   event Withdraw(uint256 tokenId);
   event TransferRequest(address indexed from, address indexed to, uint256 indexed _tokenId, bytes32 approvalHash);
 
@@ -93,13 +91,10 @@ contract TokenContract is ERC721BasicToken {
   // Mapping from token ID to approved address
   mapping (bytes32 => address) public custodianApproval;
 
-<<<<<<< HEAD
 
 
   event TransferRequest(address indexed from, address indexed to, uint256 indexed _tokenId);
 
-=======
->>>>>>> 4fa8e645c8f6503c82a31f24d27f9a6ce34766ab
   /**
    * @dev Requests transfer of ownership of a given token ID to another address
    * Usage of this method is discouraged, use `safeTransferFrom` whenever possible
@@ -140,12 +135,7 @@ contract TokenContract is ERC721BasicToken {
     clearCustodianApproval(approvalHash);
   }
 
-<<<<<<< HEAD
-  function revertTransfer(uint256 _tokenId) public {
-    require(isApprovedOrOwner(msg.sender, _tokenId));
 
-    clearCustodianApproval(_tokenId);
-=======
   function revertTransfer(uint256 _tokenId, uint256 _declaredNonce) public {
     require(isApprovedOrOwner(msg.sender, _tokenId), "no approval/ not owner");
     clearCustodianApproval(keccak256(uint256ToBytes(_tokenId).concat(uint256ToBytes(_declaredNonce))));
@@ -155,7 +145,7 @@ contract TokenContract is ERC721BasicToken {
   /* View functions --------------------------------------------------*/
   function viewTransferRequest(bytes32 _approvalHash) public view returns(address) {
     return custodianApproval[_approvalHash];
->>>>>>> 4fa8e645c8f6503c82a31f24d27f9a6ce34766ab
+
   }
 
   /* Util functions --------------------------------------------------*/
@@ -169,7 +159,7 @@ contract TokenContract is ERC721BasicToken {
     }
   }
 
-<<<<<<< HEAD
+
 
 
 
@@ -214,8 +204,6 @@ contract TokenContract is ERC721BasicToken {
   //   return (X, Y, Z, txNonce);
   // }
 
-=======
->>>>>>> 4fa8e645c8f6503c82a31f24d27f9a6ce34766ab
   function bytesToBytes32(bytes b, uint offset) private pure returns (bytes32) {
     bytes32 out;
     for (uint i = 0; i < 32; i++) {
