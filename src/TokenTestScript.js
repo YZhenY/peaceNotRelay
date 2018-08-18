@@ -8,11 +8,10 @@ var solc = require('solc');
 var input = {
     language: "Solidity",
     sources: {
-        'TokenContract_flat.sol': fs.readFileSync('../solidity-flattener/out/TokenContract_flat.sol','utf8')
+        'TokenContract_flat.sol': fs.readFileSync('./TokenContract_flat.sol','utf8')
     }
 }
 
-var source = fs.readFileSync('../solidity-flattener/out/TokenContract_flat.sol','utf8')
 var output = solc.compile(input, 1)
 const bytecode = output.contracts['TokenContract_flat.sol:TokenContract'].bytecode;
 const abi = JSON.parse(output.contracts['TokenContract_flat.sol:TokenContract'].interface);
