@@ -1,88 +1,131 @@
-//require dependencies
+/*
+This script deploys and interacts with TokenContract.sol, using Monitor account.
+*/
+
+//------------------------------------------------------------------------------
+//Require dependencies
 var ethers = require('ethers');
+var utils = require('ethers').utils;
 var infuraAPI = '9744d40b99e34a57850802d4c6433ab8';
-var provider = new ethers.providers.InfuraProvider(network='rinkeby', apiAccessToken=infuraAPI);
+var provider = new ethers.providers.InfuraProvider(network='rinkeby',
+               apiAccessToken=infuraAPI);
 var fs = require('fs');
 var solc = require('solc');
 
+//------------------------------------------------------------------------------
+//Compile Solidity contract
 var input = {
     language: "Solidity",
     sources: {
-        'TokenContract_flat.sol': fs.readFileSync('./TokenContract_flat.sol','utf8')
+        'TokenContract_flat.sol':
+        fs.readFileSync('../contracts/TokenContract_flat.sol','utf8')
     }
 }
 
 var output = solc.compile(input, 1)
-const bytecode = output.contracts['TokenContract_flat.sol:TokenContract'].bytecode;
-const abi = JSON.parse(output.contracts['TokenContract_flat.sol:TokenContract'].interface);
+const bytecode = output.contracts['TokenContract_flat.sol:TokenContract']
+                       .bytecode;
+const abi = JSON.parse(output.contracts['TokenContract_flat.sol:TokenContract']
+                .interface);
 
-//specify Monitor's account
-var privateKey = '0x13410a539b4fdb8dabde37ff8d687cc23eea64ab11eaf348a2fd775ba71a31cc';
+//------------------------------------------------------------------------------
+//Specify Monitor's account
+var privateKey = '0x13410a539b4fdb8dabde37ff8d687cc' +
+                 '23eea64ab11eaf348a2fd775ba71a31cc';
 var publicAddress = '0xC33Bdb8051D6d2002c0D80A1Dd23A1c9d9FC26E4';
+var publicAddress2 = '0x754eC60c051dF8524F9775712f8e46f36293Da9d';
 var wallet = new ethers.Wallet(privateKey, provider);
 
-var deployTransaction = ethers.Contract.getDeployTransaction("0x"+bytecode, abi,
-    publicAddress);
+//------------------------------------------------------------------------------
+//Interacting with blockchain
+function contractInstance(_addr, _abi, _wallet){
+  var contractInstance = new ethers.Contract(_addr, _abi, _wallet);
+  return contractInstance
+}
 
-async function deployContract(_deployTransaction){
-    var tx = await wallet.sendTransaction(_deployTransaction)
-    var txHash = tx['hash']
-    console.log(txHash)
+async function deployContract(_bytecode, _abi, _publicAddress){
+  var deployTransaction = ethers.Contract.getDeployTransaction("0x"+_bytecode,
+                          _abi, _publicAddress);
+  var tx = await wallet.sendTransaction(deployTransaction)
+  var txHash = tx['hash']
+  console.log('txHash: ' + txHash)
+  return txHash
 }
 
 async function getAddr(_txHash){
     var tx = await provider.getTransactionReceipt(_txHash)
     var addr = await tx['contractAddress']
-    console.log(addr)
+    return addr
 }
 
-// var sendPromise = wallet.sendTransaction(deployTransaction);
-// sendPromise.then(function(err,transaction) {
-//     console.log(err,transaction);
-// });
-
-// var tokenContractAddress = '0x24f1a771C1918132f02584222033334e56fD9f61'
-// var tokenContract = new ethers.Contract(tokenContractAddress, abi, wallet);
-
-//--------------------------------------------------------------------------------
-//Minting, transferring, and interacting with TokenContract
-
-async function mintCall() {
-    var result = await tokenContract.mint(10000, '0xC33Bdb8051D6d2002c0D80A1Dd23A1c9d9FC26E4');
-    // var transactionHash = (result['hash']);
-    // console.log(transactionHash);
-    console.log(result)
+async function getTokenID(_txHash) {
+  var transactionReceipt = await provider.getTransactionReceipt(_txHash);
+  var tokenIDHex = await transactionReceipt['logs'][0]['topics'][3]
+  var tokenIDDec = utils.bigNumberify(tokenIDHex).toString()
+  console.log('tokenIDHex: '+tokenIDHex);
+  console.log('tokenIDDec: '+tokenIDDec);
 }
 
-async function getTransactionReceipt(transactionHash) {
-    var transactionReceipt = await provider.getTransactionReceipt(transactionHash);
+async function getTransactionReceipt(_txHash) {
+    var transactionReceipt = await provider.getTransactionReceipt(_txHash);
     console.log(transactionReceipt);
 }
 
-async function ownerOfCall(_tokenIDInt) {
-    var result = await tokenContract.ownerOf(_tokenIDInt);
+
+//------------------------------------------------------------------------------
+//Interacting with contract instance
+
+async function mintCall(_amt, _publicAddress, _contractInstance) {
+    var result = await _contractInstance.mint(_amt, _publicAddress);
+    var txHash = (result['hash']);
+    console.log('mint() txHash: ' + txHash);
+    return txHash
+}
+
+
+async function ownerOfCall(_tokenIDInt, _contractInstance) {
+    var result = await _contractInstance.ownerOf(_tokenIDInt);
     console.log(result);
 }
 
-async function transferCall() {
-    var result = await tokenContract.transferFromTokenContract(
-        '0x754eC60c051dF8524F9775712f8e46f36293Da9d',
-        '0xC33Bdb8051D6d2002c0D80A1Dd23A1c9d9FC26E4',
-        '68420091402644995921492871103118945056506363385934839950840550634224801461946'
-        );
-    console.log(result);
+async function transferCall(_from, _to, _tokenId, _nonce, _contractInstance) {
+  var result = await _contractInstance.transferFrom(
+    _from,
+    _to,
+    _tokenId,
+    _nonce
+  );
+  console.log(result);
 }
 
 //----------------------------------------------------------------------------------
 //Testing functions
-var transferMethodID = '0xb22781db7a1c1a87b86b7215e93e2ad8791bb8cc984291af99060086f14f0b4a';
-var tokenIDHex = '0x9744663e9ce4a436cbd897d62862050ac115b19e8069f51b444cafc7b756b6ba';
-var tokenIDInt = '68420091402644995921492871103118945056506363385934839950840550634224801461946';
 
-// deployContract(deployTransaction)
-getAddr('0x49ad03cb89c9519e532142f4b526d948b0ce8ceafcd1cce12914041739ce5786')
+async function test(){
+  var deployTxHash = await deployContract(bytecode, abi, publicAddress)
+  //wait 30 seconds to read address of contract
+  setTimeout(async function() {
+    var contractAddr = await getAddr(deployTxHash)
+    await console.log("Contract deployed at address " + contractAddr)
+    var tokenContract = await contractInstance(contractAddr, abi, wallet)
+    await console.log("Contract instance created")
+    await mintCall(10000, publicAddress, tokenContract)
+  }, 40000);
+}
 
-// transferHistory('0x9744663e9ce4a436cbd897d62862050ac115b19e8069f51b444cafc7b756b6ba');
+// getTokenID('0xb6a6f225c2e0c78b37a7ec101b8f2806b35cf3b01f8e92e940c74de2594057e5')
+
+var contractAddr = "0x93DBC7AFAbF7bd1E3c726D69215e319b5F61a3aA"
+var tokenContract = contractInstance(contractAddr, abi, wallet)
+// mintCall(10000, publicAddress, tokenContract)
+
+transferCall(publicAddress, publicAddress2,
+  '0x65b4424b82a7a387fc4dbff605b6059c60a14efc7edf40104c79adedfb99d9d2', 1,
+  tokenContract)
+
+
+// getTokenID('0x87136973e73006f6435af353bda0e1f42b39eeb7825d586c1f07d6b9de0c8298')
+
+
 // ownerOfCall('56064289943568641797652870540193695909662562700408150778951987980509060591558')
 // ownerOfCall(tokenIDInt);
-// mintCall()
