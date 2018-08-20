@@ -9,11 +9,9 @@ This script allows a Custodian to:
 - deploy a ForeignChain TokenContract;
 */
 
-
 //--------------------------------------------------------------------------------
 //require dependencies
 var ethers = require('ethers');
-var utils = require('ethers').utils;
 var infuraAPI = '9744d40b99e34a57850802d4c6433ab8';
 var provider = new ethers.providers.InfuraProvider(network='rinkeby',
 							 apiAccessToken=infuraAPI);
@@ -26,18 +24,18 @@ var wallet = new ethers.Wallet(privateKey, provider);
 
 //--------------------------------------------------------------------------------
 //Interacting with blockchain
-console.log(utils.hexlify('mint(uint256,address)'))
+
 //--------------------------------------------------------------------------------
 //listen for Transfer events
-var transferMethodID = '0x3517824e5a48d0c22613c30dda31e0b0ea678f70dee970267c3a56c170dbcd16';
-var tokenIDHex = '0x65b4424b82a7a387fc4dbff605b6059c60a14efc7edf40104c79adedfb99d9d2';
+var transferMethodId = '0x3517824e5a48d0c22613c30dda31e0b0ea678f70dee970267c3a56c170dbcd16';
+var tokenIdHex = '0x65b4424b82a7a387fc4dbff605b6059c60a14efc7edf40104c79adedfb99d9d2';
 
-async function transferHistory(_tokenIDHex) {
+async function transferHistory(_tokenIdHex) {
 	var filter = {
 		fromBlock: 2800000,
 		toBlock: 'latest',
 		topics: [
-		transferMethodID,
+		transferMethodId,
 		null,null,
 		null
 		]
@@ -48,17 +46,17 @@ async function transferHistory(_tokenIDHex) {
 	});
 }
 
-// transferHistory(tokenIDHex)
+transferHistory(tokenIdHex)
 
 //--------------------------------------------------------------------------------
 //Approve transfers on the TokenContract
-async function custodianApproveCall(_tokenIDInt) {
-	var result = await tokenContract.custodianApprove(_tokenIDInt);
+async function custodianApproveCall(_tokenIdInt) {
+	var result = await tokenContract.custodianApprove(_tokenIdInt);
     console.log(result);
 }
 
-async function ownerOfCall(_tokenIDInt) {
-	var result = await tokenContract.ownerOf(_tokenIDInt);
+async function ownerOfCall(_tokenIdInt) {
+	var result = await tokenContract.ownerOf(_tokenIdInt);
     console.log(result);
 }
 

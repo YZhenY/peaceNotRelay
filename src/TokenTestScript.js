@@ -58,12 +58,12 @@ async function getAddr(_txHash){
     return addr
 }
 
-async function getTokenID(_txHash) {
+async function getTokenId(_txHash) {
   var transactionReceipt = await provider.getTransactionReceipt(_txHash);
-  var tokenIDHex = await transactionReceipt['logs'][0]['topics'][3]
-  var tokenIDDec = utils.bigNumberify(tokenIDHex).toString()
-  console.log('tokenIDHex: '+tokenIDHex);
-  console.log('tokenIDDec: '+tokenIDDec);
+  var tokenIdHex = await transactionReceipt['logs'][0]['topics'][3]
+  var tokenIdDec = utils.bigNumberify(tokenIdHex).toString()
+  console.log('tokenIdHex: '+tokenIdHex);
+  console.log('tokenIdDec: '+tokenIdDec);
 }
 
 async function getTransactionReceipt(_txHash) {
@@ -83,8 +83,8 @@ async function mintCall(_amt, _publicAddress, _contractInstance) {
 }
 
 
-async function ownerOfCall(_tokenIDInt, _contractInstance) {
-    var result = await _contractInstance.ownerOf(_tokenIDInt);
+async function ownerOfCall(_tokenIdInt, _contractInstance) {
+    var result = await _contractInstance.ownerOf(_tokenIdInt);
     console.log(result);
 }
 
@@ -113,7 +113,7 @@ async function test(){
   }, 40000);
 }
 
-// getTokenID('0xb6a6f225c2e0c78b37a7ec101b8f2806b35cf3b01f8e92e940c74de2594057e5')
+// getTokenId('0xb6a6f225c2e0c78b37a7ec101b8f2806b35cf3b01f8e92e940c74de2594057e5')
 
 var contractAddr = "0x93DBC7AFAbF7bd1E3c726D69215e319b5F61a3aA"
 var tokenContract = contractInstance(contractAddr, abi, wallet)
@@ -124,8 +124,8 @@ transferCall(publicAddress, publicAddress2,
   tokenContract)
 
 
-// getTokenID('0x87136973e73006f6435af353bda0e1f42b39eeb7825d586c1f07d6b9de0c8298')
+// getTokenId('0x87136973e73006f6435af353bda0e1f42b39eeb7825d586c1f07d6b9de0c8298')
 
 
 // ownerOfCall('56064289943568641797652870540193695909662562700408150778951987980509060591558')
-// ownerOfCall(tokenIDInt);
+// ownerOfCall(tokenIdInt);

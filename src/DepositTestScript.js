@@ -1,6 +1,5 @@
 //require dependencies
 var ethers = require('ethers');
-var utils = require('ethers').utils;
 var infuraAPI = '9744d40b99e34a57850802d4c6433ab8';
 var provider = new ethers.providers.InfuraProvider(network='rinkeby', apiAccessToken=infuraAPI);
 var fs = require('fs');
@@ -52,8 +51,8 @@ async function getTransactionReceipt(transactionHash) {
     console.log(transactionReceipt);
 }
 
-async function ownerOfCall(_tokenIDInt) {
-    var result = await tokenContract.ownerOf(_tokenIDInt);
+async function ownerOfCall(_tokenIdInt) {
+    var result = await tokenContract.ownerOf(_tokenIdInt);
     console.log(result);
 }
 
@@ -77,9 +76,9 @@ var depositContract = new ethers.Contract(depositContractAddress, abi, wallet);
 
 depositCall(5000,)
 
-var transferMethodID = '0xb22781db7a1c1a87b86b7215e93e2ad8791bb8cc984291af99060086f14f0b4a';
-var tokenIDHex = '0x9744663e9ce4a436cbd897d62862050ac115b19e8069f51b444cafc7b756b6ba';
-var tokenIDInt = '68420091402644995921492871103118945056506363385934839950840550634224801461946';
+var transferMethodId = '0xb22781db7a1c1a87b86b7215e93e2ad8791bb8cc984291af99060086f14f0b4a';
+var tokenIdHex = '0x9744663e9ce4a436cbd897d62862050ac115b19e8069f51b444cafc7b756b6ba';
+var tokenIdInt = '68420091402644995921492871103118945056506363385934839950840550634224801461946';
 
 // ownerOfCall('56064289943568641797652870540193695909662562700408150778951987980509060591558')
-// ownerOfCall(tokenIDInt);
+// ownerOfCall(tokenIdInt);
