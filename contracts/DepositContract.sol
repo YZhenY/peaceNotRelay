@@ -141,9 +141,12 @@ contract DepositContract {
     bytes[] rawTxList;
     splitTxBundle(_rawTxBundle, _txLengths, rawTxList);
 
-    RLP.RLPItem[] memory withdrawTx = rawTxList[0].toRLPItem().toList(); //_withdrawTx
-    RLP.RLPItem[] memory lastTx = rawTxList[1].toRLPItem().toList(); // _lastTx
-    RLP.RLPItem[] memory custodianTx = rawTxList[2].toRLPItem().toList(); // _custodianTx
+    //_withdrawTx withdraw() message sent by withdrawer to TokenContract
+    RLP.RLPItem[] memory withdrawTx = rawTxList[0].toRLPItem().toList();
+    // _lastTx on TokenContract transferring custody of token to withdrawer
+    RLP.RLPItem[] memory lastTx = rawTxList[1].toRLPItem().toList();
+    // _custodianTx signed version of _lastTx
+    RLP.RLPItem[] memory custodianTx = rawTxList[2].toRLPItem().toList();
 
     checkTransferTxAndCustodianTx(lastTx, custodianTx, _txMsgHashes[2]);
 
@@ -155,9 +158,9 @@ contract DepositContract {
                                      withdrawTx[8].toBytes32()), //s
             "WithdrawalTx not signed by lastTx receipient");
 
-    //require that a challenge has not started
+    //require that a challenge period is not underway
     require(challengeTime[_tokenId] == 0);
-    //start challenge
+    //start challenge period
     challengeTime[_tokenId] = now + 10 minutes;
     challengeEndNonce[_tokenId] = _declaredNonce;
     challengeAddressClaim[_tokenId] = lastCustody;
@@ -172,15 +175,16 @@ contract DepositContract {
    * @param _tokenId uint256 Id of token on TokenContract
   */
   function claim(uint256 _tokenId) public {
-    require(challengeTime[_tokenId] != 0);
-    require(challengeTime[_tokenId] < now);
+    require(challengeTime[_tokenId] != 0,
+            "the challenge period has not started yet");
+    require(challengeTime[_tokenId] < now,
+            "the challenge period has not ended yet");
     require(challengeNonce[_tokenId] == challengeEndNonce[_tokenId] ||
                                         challengeNonce[_tokenId] == 0,
-            "either a challenge has started, or has not been proven to endNonce");
-
+            "either a challenge has started, "+
+            "or the challenge response has not been proven to endNonce");
     challengeRecipient[_tokenId].send((tokenIdToAmount[_tokenId] ) +
                                        challengeStake[_tokenId]);
-
     tokenIdToAmount[_tokenId] = 0;
     resetChallenge(_tokenId);
   }
@@ -296,13 +300,14 @@ contract DepositContract {
    * @param _txLengths lengths of transactions in rawTxBundle, used for efficiency purposes
    * @param _txMsgHashes msghashes of transactions in bundle
   */
+  // TODO: rename challengeWithPastCustody to respondWithPastCustody
   function challengeWithPastCustody(address _to,
                                     uint256 _tokenId,
                                     bytes32[] _rawTxBundle,
                                     uint256[] _txLengths,
                                     bytes32[] _txMsgHashes) public {
     require(challengeTime[_tokenId] != 0);
-    require(challengeTime[_tokenId] > now);
+    require(challengeTime[_tokenId] > now); //challenge is still open
     require(challengeNonce[_tokenId] > 0);
 
     // splits bundle into individual rawTxs
@@ -322,17 +327,20 @@ contract DepositContract {
               "token needs to be transfered from last proven custody");
       //moves up root mint referecce to recipient address
       tokenIdToMinter[_tokenId] = parseData(transferTx[5].toData(), 2).toAddress(12);
+      //updates challengeNonce to next step
+      challengeNonce[_tokenId] += 1;
     }
+
   }
 
   /*
   /**
-   * @dev In the existance of two tokenIds with the same nonce indicates the presence of double spending
-   * Burn the custodian for a double spend
+   * @dev The existence of two tokenIds with same nonce indicates presence of
+     double signing on the part of the Custodian => should punish Custodian
    // TODO: how much to punish custodian??? can we pay out the stake instead of just burning it, pause contract??
    * @param _to address to send stake given success
    * @param _tokenId uint256 Id of token on TokenContract
-   * @param _rawTxBundle bytes32[] bundle that takes in concatination of bytes _transactionTx, bytes _custodianTx
+   * @param _rawTxBundle bytes32[] concatenation of bytes _transactionTx, bytes _custodianTx
    * @param _txLengths lengths of transactions in rawTxBundle, used for efficiency purposes
    * @param _txMsgHashes msghashes of transactions in bundle
   */
@@ -356,7 +364,8 @@ contract DepositContract {
             "needs to refer to the same tokenId");
     require(_tokenId == parseData(transferTx2[5].toData(), 3).toUint(0),
             "needs to refer to the same tokenId");
-    require(parseData(transferTx2[5].toData(), 4).toUint(0) == parseData(transferTx[5].toData(), 4).toUint(0),
+    require(parseData(transferTx2[5].toData(), 4).toUint(0) ==
+            parseData(transferTx[5].toData(), 4).toUint(0),
             "needs to refer to the same nonce");
 
     //TODO: how much to punish custodian??? can we pay out the stake instead of
@@ -377,16 +386,21 @@ contract DepositContract {
                                          bytes32 _custodianTxMsgHash) internal {
     require(_transferTx[3].toAddress() == tokenContract);
     require(_custodianTx[3].toAddress() == tokenContract);
-    require(bytesToBytes4(parseData(_transferTx[5].toData(), 0), 0) == transferFromSignature,
-            "_transferTx is not transferFrom function");
-    require(bytesToBytes4(parseData(_custodianTx[5].toData(), 0), 0) == custodianApproveSignature,
-            "_custodianTx is not custodianApproval");
-    require(custodianForeign == ecrecover(_custodianTxMsgHash, uint8(_custodianTx[6].toUint()), _custodianTx[7].toBytes32(), _custodianTx[8].toBytes32()),
+    require(bytesToBytes4(parseData(_transferTx[5].toData(), 0), 0) ==
+            transferFromSignature, "_transferTx is not transferFrom function");
+    require(bytesToBytes4(parseData(_custodianTx[5].toData(), 0), 0) ==
+            custodianApproveSignature, "_custodianTx is not custodianApproval");
+    require(custodianForeign == ecrecover(_custodianTxMsgHash,
+                                          uint8(_custodianTx[6].toUint()),
+                                          _custodianTx[7].toBytes32(),
+                                          _custodianTx[8].toBytes32()),
             "_custodianTx should be signed by custodian");
     //TODO: which is more efficient, checking parameters or hash?
-    require(parseData(_transferTx[5].toData(),3).equal(parseData(_custodianTx[5].toData(),1)),
+    require(parseData(_transferTx[5].toData(),3).
+            equal(parseData(_custodianTx[5].toData(),1)),
             "token_ids do not match");
-    require(parseData(_transferTx[5].toData(),4).equal(parseData(_custodianTx[5].toData(),2)),
+    require(parseData(_transferTx[5].toData(),4).
+            equal(parseData(_custodianTx[5].toData(),2)),
             "nonces do not match");
   }
 
@@ -394,11 +408,13 @@ contract DepositContract {
   /**
    * @dev Splits a rawTxBundle received to its individual transactions.
    * Necessary due to limitation in amount of data transferable through solidity arguments
-   * @param  _transferTx RLP item array representing transferTx
-   * @param _tokenId RLP item array representing corresponding custodianTx
-   * @param _rawTxBundle bytes32 _custodianTx msgHash
+   * @param  _rawTxBundle that is a concatenation of bytes _withdrawTx,
+             bytes _lastTx, bytes _custodianTx
+   * @param _txLengths lengths of transactions in rawTxBundle
+   * @param _rawTxList list of individual transactions from _rawTxBundle
   */
-  function splitTxBundle(bytes32[] _rawTxBundle, uint256[] _txLengths,
+  function splitTxBundle(bytes32[] _rawTxBundle,
+                         uint256[] _txLengths,
                          bytes[] storage _rawTxList) internal {
     uint256 txStartPosition = 0;
     for (uint i = 0; i < _txLengths.length; i++) {
