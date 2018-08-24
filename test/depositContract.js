@@ -23,10 +23,10 @@ var transactionFields = [ 'nonce',
 
 const txParams = {
   nonce: '0x00',
-  gasPrice: '0x09184e72a000', 
+  gasPrice: '0x09184e72a000',
   gasLimit: '0x2710',
-  to: '0x0000000000000000000000000000000000000000', 
-  value: '0x00', 
+  to: '0x0000000000000000000000000000000000000000',
+  value: '0x00',
   data: '0x7f7465737432000000000000000000000000000000000000000000000000000000600057',
 }
 const tx = new EthereumTx(txParams)
@@ -63,7 +63,7 @@ v: '0x1c',
 r: '0xd0ec4edab9f88619d9c48cd64e45a3da1a4d7e13a20db69033a234e68a3e64cd',
 s: '0x56e492a2834e706d462d37db5ca85363c44775387e6a139781101e6c57431bd7' }
 
-var dummyMintHash = new BN('0xd9f48f06cfd7a657aec67d94e17e2e921df7ef2fa4d29ff2c0ec6bb3271a28dc');
+var dummyTokenId = new BN('0xd9f48f06cfd7a657aec67d94e17e2e921df7ef2fa4d29ff2c0ec6bb3271a28dc');
 
 var tokenContract = "0xc40b249a7cde0fca8fadcf4eba8dee933b460bd7";
 var dummyAddress = "0xc40b249a7cde0fca8fadcf4eba8dea933b460bd7";
@@ -106,9 +106,9 @@ contract('Deposit Contract', async (accounts) => {
   // })
 
   it("should  deposit()", async () => {
-    var result = await depositContract.deposit(dummyMintHash, dummyAddress, 10);
+    var result = await depositContract.deposit(dummyTokenId, dummyAddress, 10);
     console.log(result.receipt.logs[0].args);
-  }) 
+  })
 
 
 })

@@ -24,7 +24,7 @@ contract TokenContract is ERC721BasicToken {
   uint256 mintCap;
   uint256 mintedAmount;
   uint256 public mintNonce = 0;
-  mapping (bytes32 => uint256) public transferNonce;
+  mapping (uint256 => uint256) public transferNonce;
   mapping (bytes32 => address) public custodianApproval;
 
   constructor (address _custodian) {
@@ -52,7 +52,7 @@ contract TokenContract is ERC721BasicToken {
   event Mint(uint256 amount,
              address indexed depositedTo,
              uint256 mintNonce,
-             bytes32 tokenId);
+             uint256 tokenId);
   event Withdraw(uint256 tokenId);
   event TransferRequest(address indexed from,
                         address indexed to,
@@ -76,9 +76,8 @@ contract TokenContract is ERC721BasicToken {
     bytes memory value = uint256ToBytes(_value);
     bytes memory to = addressToBytes(_to);
     bytes memory Z = uint256ToBytes(mintNonce);
-    bytes32 tokenId = keccak256(value.concat(to).concat(Z));
-    transferNonce[tokenId] = 0;
-    _mint(_to, bytes32ToUint256(tokenId));
+    uint256 tokenId = bytes32ToUint256(keccak256(value.concat(to).concat(Z)));
+    _mint(_to, tokenId);
     emit Mint(_value, _to, mintNonce, tokenId);
     mintNonce += 1;
   }
@@ -100,6 +99,7 @@ contract TokenContract is ERC721BasicToken {
    * @param _tokenId uint256 ID of the token to be transferred
    * @param _declaredNonce uint256 nonce, depth of transaction
   */
+
   function transferFrom(
     address _from,
     address _to,
@@ -111,7 +111,7 @@ contract TokenContract is ERC721BasicToken {
     require(isApprovedOrOwner(msg.sender, _tokenId));
     require(_from != address(0));
     require(_to != address(0));
-    require(_declaredNonce == transferNonce[_tokenId] + 1);
+    require(_declaredNonce == transferNonce[_tokenId]);
 
     clearApproval(_from, _tokenId);
     //TODO: Double check if hash is secure, no chance of collision

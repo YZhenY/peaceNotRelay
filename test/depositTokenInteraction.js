@@ -32,7 +32,7 @@ web3.eth.sendRawTransaction = Promise.promisify(web3.eth.sendRawTransaction);
 web3.eth.getBalance = Promise.promisify(web3.eth.getBalance);
 web3.currentProvider.send = Promise.promisify(web3.currentProvider.send);
 
-var dummyMintHash = new BN('0xd9f48f06cfd7a657aec67d94e17e2e921df7ef2fa4d29ff2c0ec6bb3271a28dc');
+var dummyTokenId = new BN('0xd9f48f06cfd7a657aec67d94e17e2e921df7ef2fa4d29ff2c0ec6bb3271a28dc');
 var dummyAddress = "0xc40b249a7cde0fca8fadcf4eba8dea933b460bd7";
 
 contract('Deposit-Token Contract Interactions', async (accounts) => {
@@ -41,7 +41,7 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
     tokenContract = await TokenContract.new(accounts[1]);
     depositContract = await DepositContract.new(accounts[0]);
     await depositContract.setTokenContract(tokenContract.address);
-    await depositContract.setCustodianETC(accounts[1]);
+    await depositContract.setCustodianForeign(accounts[1]);
 
     gasPerChallenge = 206250;
     //Will be wrong unless explicitly stated in transaction details
@@ -55,20 +55,20 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
   it("should  mint() and then deposit()", async () => {
     var result = await tokenContract.mint(tokenValue, accounts[2]);
     assert(result.logs[1].event === "Mint", "should emit event mint");
-    
-    var mintHash = result.logs[1].args.mintHash;
-    result = await depositContract.deposit(mintHash, accounts[2]);
+
+    var tokenId = result.logs[1].args.tokenId;
+    result = await depositContract.deposit(tokenId, accounts[2]);
     assert(result.logs[0].event === "Deposit", "should emit event deposit");
     assert(result.logs[0].args.minter === accounts[2], "should emit event with minter ");
-    assert(result.logs[0].args.mintHash.eq(mintHash), "should emit event with mintHash");
+    assert(result.logs[0].args.tokenId.eq(tokenId), "should emit event with tokenId");
 
   })
 
   it("should be able to transfer and claim back home currency", async () => {
     var result = await tokenContract.mint(tokenValue, accounts[2]);
-    var mintHash = result.logs[1].args.mintHash;
-    result = await depositContract.deposit(mintHash, accounts[2], {value: tokenValue});
-    result = await tokenContract.ownerOf(mintHash);
+    var tokenId = result.logs[1].args.tokenId;
+    result = await depositContract.deposit(tokenId, accounts[2], {value: tokenValue});
+    result = await tokenContract.ownerOf(tokenId);
     assert(result === accounts[2], `token should have transfered to ${accounts[2]}, instead ${result}`);
 
 
@@ -77,7 +77,7 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
       privKeys[2],
       tokenContract.address,
       0,
-      tokenContract.transferFrom.request(accounts[2], accounts[3], mintHash.toString(), 0).params[0].data
+      tokenContract.transferFrom.request(accounts[2], accounts[3], tokenId.toString(), 0).params[0].data
     )
     result = await web3.eth.sendRawTransaction('0x' + rawTransferFrom.rawTx.toString('hex'));
 
@@ -86,18 +86,18 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
       privKeys[1],
       tokenContract.address,
       0,
-      tokenContract.custodianApprove.request(mintHash.toString(), 0).params[0].data
+      tokenContract.custodianApprove.request(tokenId.toString(), 0).params[0].data
     )
 
     result = await web3.eth.sendRawTransaction('0x' + rawCustodianApprove.rawTx.toString('hex'));
-    result = await tokenContract.ownerOf(mintHash);
+    result = await tokenContract.ownerOf(tokenId);
     assert(result === accounts[3], `token should have transfered to ${accounts[3]}, instead ${result}`);
     var rawWithdrawal = await generateRawTxAndMsgHash(
       accounts[3],
       privKeys[3],
       tokenContract.address,
       0,
-      tokenContract.withdraw.request(mintHash.toString()).params[0].data
+      tokenContract.withdraw.request(tokenId.toString()).params[0].data
     )
 
     var bytes32Bundle = [];
@@ -111,15 +111,15 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
     // console.log("BUNDLE: ", bytes32Bundle);
     // console.log("txLENGHTS: ", txLengths);
     // console.log("HashShit: ", txMsgHashes);
-    result = await depositContract.withdraw(accounts[4], mintHash, bytes32Bundle, txLengths, txMsgHashes, 1, {gasPrice: gasPrice, value:stakeValue});
+    result = await depositContract.withdraw(accounts[4], tokenId, bytes32Bundle, txLengths, txMsgHashes, 1, {gasPrice: gasPrice, value:stakeValue});
     console.log(`withdraw() gas used: ${result.receipt.gasUsed}`);
 
     //Time Travel Forward
     await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_increaseTime", params: [605], id: 0});
     await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_mine", params: [], id: 0});
 
-    var startAmount = await web3.eth.getBalance(accounts[4]);    
-    result = await depositContract.claim(mintHash);
+    var startAmount = await web3.eth.getBalance(accounts[4]);
+    result = await depositContract.claim(tokenId);
     var newBalance = await web3.eth.getBalance(accounts[4]);
     var withdrawnAmount = newBalance.sub(startAmount);
     assert(withdrawnAmount.eq(tokenValue + stakeValue), `should withdraw ${tokenValue + stakeValue} , instead ${withdrawnAmount}`);
@@ -128,9 +128,9 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
 
   it("should revert claim() if attempted too early", async () => {
     var result = await tokenContract.mint(tokenValue, accounts[2]);
-    var mintHash = result.logs[1].args.mintHash;
-    result = await depositContract.deposit(mintHash, accounts[2], {value: tokenValue});
-    result = await tokenContract.ownerOf(mintHash);
+    var tokenId = result.logs[1].args.tokenId;
+    result = await depositContract.deposit(tokenId, accounts[2], {value: tokenValue});
+    result = await tokenContract.ownerOf(tokenId);
     assert(result === accounts[2], `token should have transfered to ${accounts[2]}, instead ${result}`);
 
     var rawTransferFrom = await generateRawTxAndMsgHash(
@@ -138,7 +138,7 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
       privKeys[2],
       tokenContract.address,
       0,
-      tokenContract.transferFrom.request(accounts[2], accounts[3], mintHash.toString(), 0).params[0].data
+      tokenContract.transferFrom.request(accounts[2], accounts[3], tokenId.toString(), 0).params[0].data
     )
     result = await web3.eth.sendRawTransaction('0x' + rawTransferFrom.rawTx.toString('hex'));
 
@@ -147,23 +147,23 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
       privKeys[1],
       tokenContract.address,
       0,
-      tokenContract.custodianApprove.request(mintHash.toString(), 0).params[0].data
+      tokenContract.custodianApprove.request(tokenId.toString(), 0).params[0].data
     )
 
     result = await web3.eth.sendRawTransaction('0x' + rawCustodianApprove.rawTx.toString('hex'));
-    result = await tokenContract.ownerOf(mintHash);
+    result = await tokenContract.ownerOf(tokenId);
     assert(result === accounts[3], `token should have transfered to ${accounts[3]}, instead ${result}`);
-    
+
     var rawWithdrawal = await generateRawTxAndMsgHash(
       accounts[3],
       privKeys[3],
       tokenContract.address,
       0,
-      tokenContract.withdraw.request(mintHash.toString()).params[0].data
+      tokenContract.withdraw.request(tokenId.toString()).params[0].data
     )
 
     //bundle takes in bytes _withdrawalTx, bytes _lastTx, bytes _custodianTx
-    //address _to, uint256 _mintHash, bytes _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes, uint256 _declaredNonce
+    //address _to, uint256 _tokenId, bytes _rawTxBundle, uint256[] _txLengths, bytes32[] _txMsgHashes, uint256 _declaredNonce
     var bytes32Bundle = [];
     // console.log("RAW: ", [rawWithdrawal.rawTx.toString('hex'), rawTransferFrom.rawTx.toString('hex'), rawCustodianApprove.rawTx.toString('hex')]);
     [rawWithdrawal.rawTx.toString('hex'), rawTransferFrom.rawTx.toString('hex'), rawCustodianApprove.rawTx.toString('hex')].forEach((value) => {
@@ -175,9 +175,9 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
     // console.log("BUNDLE: ", bytes32Bundle);
     // console.log("txLENGHTS: ", txLengths);
     // console.log("HashShit: ", txMsgHashes);
-    result = await depositContract.withdraw(accounts[4], mintHash, bytes32Bundle, txLengths, txMsgHashes, 1, {gasPrice: gasPrice, value:stakeValue});
+    result = await depositContract.withdraw(accounts[4], tokenId, bytes32Bundle, txLengths, txMsgHashes, 1, {gasPrice: gasPrice, value:stakeValue});
 
-    assertRevert(depositContract.claim(mintHash));
+    assertRevert(depositContract.claim(tokenId));
 
 
   })
@@ -185,9 +185,9 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
   //TODO: ISSUE NEED TO IMPLEMENT HALT OF TRANSFERS ON TOKEN CONTRACT
   it("should be able to handle early withdrawal attack", async () => {
     var result = await tokenContract.mint(tokenValue, accounts[2]);
-    var mintHash = result.logs[1].args.mintHash;
-    result = await depositContract.deposit(mintHash, accounts[2], {value: tokenValue});
-    result = await tokenContract.ownerOf(mintHash);
+    var tokenId = result.logs[1].args.tokenId;
+    result = await depositContract.deposit(tokenId, accounts[2], {value: tokenValue});
+    result = await tokenContract.ownerOf(tokenId);
     assert(result === accounts[2], `token should have transfered to ${accounts[2]}, instead ${result}`);
 
     //FIRST TRANSFER
@@ -196,7 +196,7 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
       privKeys[2],
       tokenContract.address,
       0,
-      tokenContract.transferFrom.request(accounts[2], accounts[3], mintHash.toString(), 0).params[0].data
+      tokenContract.transferFrom.request(accounts[2], accounts[3], tokenId.toString(), 0).params[0].data
     )
     result = await web3.eth.sendRawTransaction('0x' + rawTransferFrom.rawTx.toString('hex'));
     var rawCustodianApprove = await generateRawTxAndMsgHash(
@@ -204,13 +204,13 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
       privKeys[1],
       tokenContract.address,
       0,
-      tokenContract.custodianApprove.request(mintHash.toString(), 0).params[0].data
+      tokenContract.custodianApprove.request(tokenId.toString(), 0).params[0].data
     )
 
     result = await web3.eth.sendRawTransaction('0x' + rawCustodianApprove.rawTx.toString('hex'));
-    result = await tokenContract.ownerOf(mintHash);
+    result = await tokenContract.ownerOf(tokenId);
     assert(result === accounts[3], `token should have transfered to ${accounts[3]}, instead ${result}`);
-    
+
 
     //SECOND TRANSFER
     var rawTransferFrom2 = await generateRawTxAndMsgHash(
@@ -218,7 +218,7 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
       privKeys[3],
       tokenContract.address,
       0,
-      tokenContract.transferFrom.request(accounts[3], accounts[4], mintHash.toString(), 0).params[0].data
+      tokenContract.transferFrom.request(accounts[3], accounts[4], tokenId.toString(), 1).params[0].data
     )
     result = await web3.eth.sendRawTransaction('0x' + rawTransferFrom2.rawTx.toString('hex'));
     var rawCustodianApprove2 = await generateRawTxAndMsgHash(
@@ -226,30 +226,30 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
       privKeys[1],
       tokenContract.address,
       0,
-      tokenContract.custodianApprove.request(mintHash.toString(), 0).params[0].data
+      tokenContract.custodianApprove.request(tokenId.toString(), 1).params[0].data
     )
 
     result = await web3.eth.sendRawTransaction('0x' + rawCustodianApprove2.rawTx.toString('hex'));
-    result = await tokenContract.ownerOf(mintHash);
+    result = await tokenContract.ownerOf(tokenId);
     assert(result === accounts[4], `token should have transfered to ${accounts[4]}, instead ${result}`);
-    
+
     //CREATE EARLY WITHDRAWAL
     var rawWithdrawal = await generateRawTxAndMsgHash(
       accounts[3],
       privKeys[3],
       tokenContract.address,
       0,
-      tokenContract.withdraw.request(mintHash.toString()).params[0].data
+      tokenContract.withdraw.request(tokenId.toString()).params[0].data
     )
 
     //STARTING CHALLENGE
     var withdrawArgs = formBundleLengthsHashes([rawWithdrawal, rawTransferFrom, rawCustodianApprove]);
-    result = await depositContract.withdraw(accounts[4], mintHash, withdrawArgs.bytes32Bundle, withdrawArgs.txLengths, withdrawArgs.txMsgHashes, 1, {gasPrice: gasPrice, value:stakeValue});
+    result = await depositContract.withdraw(accounts[4], tokenId, withdrawArgs.bytes32Bundle, withdrawArgs.txLengths, withdrawArgs.txMsgHashes, 1, {gasPrice: gasPrice, value:stakeValue});
 
-    var startAmount = await web3.eth.getBalance(accounts[5]);    
+    var startAmount = await web3.eth.getBalance(accounts[5]);
 
     var challengeArgs = formBundleLengthsHashes([rawTransferFrom2, rawCustodianApprove2]);
-    result = await depositContract.challengeWithFutureCustody(accounts[5], mintHash, challengeArgs.bytes32Bundle, challengeArgs.txLengths, challengeArgs.txMsgHashes);
+    result = await depositContract.challengeWithFutureCustody(accounts[5], tokenId, challengeArgs.bytes32Bundle, challengeArgs.txLengths, challengeArgs.txMsgHashes);
     console.log(`challengeWithFutureCustody() gas used: ${result.receipt.gasUsed}`);
     var newBalance = await web3.eth.getBalance(accounts[5]);
     var withdrawnAmount = newBalance.sub(startAmount);
@@ -259,9 +259,9 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
 
   it("should be able to prove past custody", async () => {
     var result = await tokenContract.mint(tokenValue, accounts[2]);
-    var mintHash = result.logs[1].args.mintHash;
-    result = await depositContract.deposit(mintHash, accounts[2], {value: tokenValue});
-    result = await tokenContract.ownerOf(mintHash);
+    var tokenId = result.logs[1].args.tokenId;
+    result = await depositContract.deposit(tokenId, accounts[2], {value: tokenValue});
+    result = await tokenContract.ownerOf(tokenId);
     assert(result === accounts[2], `token should have transfered to ${accounts[2]}, instead ${result}`);
 
     //FIRST TRANSFER
@@ -270,7 +270,7 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
       privKeys[2],
       tokenContract.address,
       0,
-      tokenContract.transferFrom.request(accounts[2], accounts[3], mintHash.toString(), 0).params[0].data
+      tokenContract.transferFrom.request(accounts[2], accounts[3], tokenId.toString(), 0).params[0].data
     )
     result = await web3.eth.sendRawTransaction('0x' + rawTransferFrom.rawTx.toString('hex'));
     var rawCustodianApprove = await generateRawTxAndMsgHash(
@@ -278,13 +278,13 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
       privKeys[1],
       tokenContract.address,
       0,
-      tokenContract.custodianApprove.request(mintHash.toString(), 0).params[0].data
+      tokenContract.custodianApprove.request(tokenId.toString(), 0).params[0].data
     )
 
     result = await web3.eth.sendRawTransaction('0x' + rawCustodianApprove.rawTx.toString('hex'));
-    result = await tokenContract.ownerOf(mintHash);
+    result = await tokenContract.ownerOf(tokenId);
     assert(result === accounts[3], `token should have transfered to ${accounts[3]}, instead ${result}`);
-    
+
 
     // FUTURE FRAUDULENT TRANSFER
     var rawTransferFrom2 = await generateRawTxAndMsgHash(
@@ -292,48 +292,48 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
       privKeys[6],
       tokenContract.address,
       0,
-      tokenContract.transferFrom.request(accounts[6], accounts[7], mintHash.toString(), 5).params[0].data
+      tokenContract.transferFrom.request(accounts[6], accounts[7], tokenId.toString(), 5).params[0].data
     )
     var rawCustodianApprove2 = await generateRawTxAndMsgHash(
       accounts[1],
       privKeys[1],
       tokenContract.address,
       0,
-      tokenContract.custodianApprove.request(mintHash.toString(), 5).params[0].data
+      tokenContract.custodianApprove.request(tokenId.toString(), 5).params[0].data
     )
-    
+
     //CREATE FUTURE FRAUDULENT WITHDRAWAL
     var rawWithdrawal = await generateRawTxAndMsgHash(
       accounts[7],
       privKeys[7],
       tokenContract.address,
       0,
-      tokenContract.withdraw.request(mintHash.toString()).params[0].data
+      tokenContract.withdraw.request(tokenId.toString()).params[0].data
     )
 
     //STARTING FRAUDULENT CHALLENGE
     var withdrawArgs = formBundleLengthsHashes([rawWithdrawal, rawTransferFrom2, rawCustodianApprove2]);
-    result = await depositContract.withdraw(accounts[8], mintHash, withdrawArgs.bytes32Bundle, withdrawArgs.txLengths, withdrawArgs.txMsgHashes, 5, {gasPrice: gasPrice, value:stakeValue * 5});
+    result = await depositContract.withdraw(accounts[8], tokenId, withdrawArgs.bytes32Bundle, withdrawArgs.txLengths, withdrawArgs.txMsgHashes, 5, {gasPrice: gasPrice, value:stakeValue * 5});
 
     var challengeArgs = formBundleLengthsHashes([rawTransferFrom, rawCustodianApprove]);
-    result = await depositContract.initiateChallengeWithPastCustody(accounts[5], mintHash, challengeArgs.bytes32Bundle, challengeArgs.txLengths, challengeArgs.txMsgHashes, {gasPrice: gasPrice, value:stakeValue});
+    result = await depositContract.initiateChallengeWithPastCustody(accounts[5], tokenId, challengeArgs.bytes32Bundle, challengeArgs.txLengths, challengeArgs.txMsgHashes, {gasPrice: gasPrice, value:stakeValue});
     console.log(`challengeWithPastCustody() gas used: ${result.receipt.gasUsed}`);
     //Time Travel Forward
     await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_increaseTime", params: [605], id: 0});
     await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_mine", params: [], id: 0});
-    
-    assertRevert(depositContract.claim(mintHash));
+
+    assertRevert(depositContract.claim(tokenId));
   })
 
   it("should be able to prove long chains of custody using challengeWithPastCustody()", async () => {
     var result = await tokenContract.mint(tokenValue, accounts[2]);
-    var mintHash = result.logs[1].args.mintHash;
-    result = await depositContract.deposit(mintHash, accounts[2], {value: tokenValue});
-    result = await tokenContract.ownerOf(mintHash);
+    var tokenId = result.logs[1].args.tokenId;
+    result = await depositContract.deposit(tokenId, accounts[2], {value: tokenValue});
+    result = await tokenContract.ownerOf(tokenId);
     assert(result === accounts[2], `token should have transfered to ${accounts[2]}, instead ${result}`);
 
     var rawTxs = []
-    
+
     //CREATE CHAIN i LONG
     for (var i = 0; i < 10; i ++) {
       var sender = (i % 2 === 0) ? 2 : 3;
@@ -343,7 +343,7 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
         privKeys[sender],
         tokenContract.address,
         0,
-        tokenContract.transferFrom.request(accounts[sender], accounts[recipient], mintHash.toString(), i).params[0].data
+        tokenContract.transferFrom.request(accounts[sender], accounts[recipient], tokenId.toString(), i).params[0].data
       )
       result = await web3.eth.sendRawTransaction('0x' + rawTransferFrom.rawTx.toString('hex'));
       var rawCustodianApprove = await generateRawTxAndMsgHash(
@@ -351,15 +351,15 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
         privKeys[1],
         tokenContract.address,
         0,
-        tokenContract.custodianApprove.request(mintHash.toString(), i).params[0].data
+        tokenContract.custodianApprove.request(tokenId.toString(), i).params[0].data
       )
       result = await web3.eth.sendRawTransaction('0x' + rawCustodianApprove.rawTx.toString('hex'));
-      result = await tokenContract.ownerOf(mintHash);
+      result = await tokenContract.ownerOf(tokenId);
       assert(result === accounts[recipient], `token should have transfered to ${accounts[recipient]}, instead ${result}`);
       rawTxs.push(rawTransferFrom);
       rawTxs.push(rawCustodianApprove);
     }
-    
+
 
     // FUTURE FRAUDULENT TRANSFER
     var rawTransferFrom2 = await generateRawTxAndMsgHash(
@@ -367,40 +367,40 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
       privKeys[6],
       tokenContract.address,
       0,
-      tokenContract.transferFrom.request(accounts[6], accounts[7], mintHash.toString(), 20).params[0].data
+      tokenContract.transferFrom.request(accounts[6], accounts[7], tokenId.toString(), 20).params[0].data
     )
     var rawCustodianApprove2 = await generateRawTxAndMsgHash(
       accounts[1],
       privKeys[1],
       tokenContract.address,
       0,
-      tokenContract.custodianApprove.request(mintHash.toString(), 20).params[0].data
+      tokenContract.custodianApprove.request(tokenId.toString(), 20).params[0].data
     )
-    
+
     //CREATE FUTURE FRAUDULENT WITHDRAWAL
     var rawWithdrawal = await generateRawTxAndMsgHash(
       accounts[7],
       privKeys[7],
       tokenContract.address,
       0,
-      tokenContract.withdraw.request(mintHash.toString()).params[0].data
+      tokenContract.withdraw.request(tokenId.toString()).params[0].data
     )
 
     //STARTING FRAUDULENT CHALLENGE
     var withdrawArgs = formBundleLengthsHashes([rawWithdrawal, rawTransferFrom2, rawCustodianApprove2]);
-    result = await depositContract.withdraw(accounts[8], mintHash, withdrawArgs.bytes32Bundle, withdrawArgs.txLengths, withdrawArgs.txMsgHashes, 20, {gasPrice: gasPrice, value:stakeValue * 20});
+    result = await depositContract.withdraw(accounts[8], tokenId, withdrawArgs.bytes32Bundle, withdrawArgs.txLengths, withdrawArgs.txMsgHashes, 20, {gasPrice: gasPrice, value:stakeValue * 20});
 
     var challengeArgs = formBundleLengthsHashes(rawTxs.slice(0,2));
-    result = await depositContract.initiateChallengeWithPastCustody(accounts[5], mintHash, challengeArgs.bytes32Bundle, challengeArgs.txLengths, challengeArgs.txMsgHashes, {gasPrice: gasPrice, value:stakeValue * 4});
+    result = await depositContract.initiateChallengeWithPastCustody(accounts[5], tokenId, challengeArgs.bytes32Bundle, challengeArgs.txLengths, challengeArgs.txMsgHashes, {gasPrice: gasPrice, value:stakeValue * 4});
 
     var challengeArgs = formBundleLengthsHashes(rawTxs.slice(2));
-    result = await depositContract.challengeWithPastCustody(accounts[5], mintHash, challengeArgs.bytes32Bundle, challengeArgs.txLengths, challengeArgs.txMsgHashes);
+    result = await depositContract.challengeWithPastCustody(accounts[5], tokenId, challengeArgs.bytes32Bundle, challengeArgs.txLengths, challengeArgs.txMsgHashes);
     console.log(`long challengeWithPastCustody() gas used: ${result.receipt.gasUsed}`);
     //Time Travel Forward
     await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_increaseTime", params: [605], id: 0});
     await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_mine", params: [], id: 0});
-    
-    assertRevert(depositContract.claim(mintHash));
+
+    assertRevert(depositContract.claim(tokenId));
   })
 })
 

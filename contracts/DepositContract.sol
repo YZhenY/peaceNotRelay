@@ -181,8 +181,7 @@ contract DepositContract {
             "the challenge period has not ended yet");
     require(challengeNonce[_tokenId] == challengeEndNonce[_tokenId] ||
                                         challengeNonce[_tokenId] == 0,
-            "either a challenge has started, "+
-            "or the challenge response has not been proven to endNonce");
+            "either a challenge has started, or the challenge response has not been proven to endNonce");
     challengeRecipient[_tokenId].send((tokenIdToAmount[_tokenId] ) +
                                        challengeStake[_tokenId]);
     tokenIdToAmount[_tokenId] = 0;
@@ -300,7 +299,7 @@ contract DepositContract {
    * @param _txLengths lengths of transactions in rawTxBundle, used for efficiency purposes
    * @param _txMsgHashes msghashes of transactions in bundle
   */
-  // TODO: rename challengeWithPastCustody to respondWithPastCustody
+  // TODO: rename challegne
   function challengeWithPastCustody(address _to,
                                     uint256 _tokenId,
                                     bytes32[] _rawTxBundle,
