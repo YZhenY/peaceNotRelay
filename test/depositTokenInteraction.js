@@ -402,6 +402,75 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
 
     assertRevert(depositContract.claim(tokenId));
   })
+
+  it("should be able to withdraw an honest withdrawal", async () => {
+    var result = await tokenContract.mint(tokenValue, accounts[2]);
+    var tokenId = result.logs[1].args.tokenId;
+    result = await depositContract.deposit(tokenId, accounts[2], {value: tokenValue});
+    result = await tokenContract.ownerOf(tokenId);
+    assert(result === accounts[2], `token should have transfered to ${accounts[2]}, instead ${result}`);
+
+    var rawTxs = []
+
+    //CREATE CHAIN i LONG
+    for (var i = 0; i < 10; i ++) {
+      var sender = (i % 2 === 0) ? 2 : 3;
+      var recipient = (i % 2 === 1) ? 2 : 3;
+      var rawTransferFrom = await generateRawTxAndMsgHash(
+        accounts[sender],
+        privKeys[sender],
+        tokenContract.address,
+        0,
+        tokenContract.transferFrom.request(accounts[sender], accounts[recipient], tokenId.toString(), i).params[0].data
+      )
+      result = await web3.eth.sendRawTransaction('0x' + rawTransferFrom.rawTx.toString('hex'));
+      var rawCustodianApprove = await generateRawTxAndMsgHash(
+        accounts[1],
+        privKeys[1],
+        tokenContract.address,
+        0,
+        tokenContract.custodianApprove.request(tokenId.toString(), i).params[0].data
+      )
+      result = await web3.eth.sendRawTransaction('0x' + rawCustodianApprove.rawTx.toString('hex'));
+      result = await tokenContract.ownerOf(tokenId);
+      assert(result === accounts[recipient], `token should have transfered to ${accounts[recipient]}, instead ${result}`);
+      rawTxs.push(rawTransferFrom);
+      rawTxs.push(rawCustodianApprove);
+    }
+
+
+    //CREATE HONEST WITHDRAWAL
+    var rawWithdrawal = await generateRawTxAndMsgHash(
+      accounts[2],
+      privKeys[2],
+      tokenContract.address,
+      0,
+      tokenContract.withdraw.request(tokenId.toString()).params[0].data
+    )
+
+    var withdrawArgs = formBundleLengthsHashes([rawWithdrawal, rawTxs[18], rawTxs[19]]);
+    result = await depositContract.withdraw(accounts[8], tokenId, withdrawArgs.bytes32Bundle, withdrawArgs.txLengths, withdrawArgs.txMsgHashes, 9, {gasPrice: gasPrice, value:stakeValue * 9});
+    
+    //STARTING CHALLENGE AGAINST HONEST WITHDRAWAL
+    var challengeArgs = formBundleLengthsHashes(rawTxs.slice(0,2));
+    result = await depositContract.initiateChallengeWithPastCustody(accounts[5], tokenId, challengeArgs.bytes32Bundle, challengeArgs.txLengths, challengeArgs.txMsgHashes, {gasPrice: gasPrice, value:stakeValue * 4});
+
+    //SUBMIT CHAIN OF CUSTODY
+    var challengeArgs = formBundleLengthsHashes(rawTxs.slice(2));
+    result = await depositContract.challengeWithPastCustody(accounts[8], tokenId, challengeArgs.bytes32Bundle, challengeArgs.txLengths, challengeArgs.txMsgHashes);
+    console.log(`long challengeWithPastCustody() gas used: ${result.receipt.gasUsed}`);
+
+    //Time Travel Forward
+    await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_increaseTime", params: [605], id: 0});
+    await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_mine", params: [], id: 0});
+
+    //Claim and check balances
+    var startAmount = await web3.eth.getBalance(accounts[8]);
+    result = await depositContract.claim(tokenId);
+    var newBalance = await web3.eth.getBalance(accounts[8]);
+    var withdrawnAmount = newBalance.sub(startAmount);
+    assert(withdrawnAmount.gt(tokenValue), `should withdraw greater then ${tokenValue} , instead ${withdrawnAmount}`);
+  })
 })
 
 var formBundleLengthsHashes = function(rawTxArr) {
