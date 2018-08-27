@@ -4,7 +4,7 @@ akombalabs.com
 This script allows a Monitor to:
 - listen to HomeChain withdraws
 - check if a HomeChain withdraw conflicts with transfers on ForeignChain
-- get chain of custody of particular tokenID on ForeignChain TokenContract
+- get chain of custody of particular tokenId on ForeignChain TokenContract
 - submit chain of custody to HomeChain DepositContract in a challenge
 
 */
@@ -20,25 +20,23 @@ var privateKey = '0x13410a539b4fdb8dabde37ff8d687cc23eea64ab11eaf348a2fd775ba71a
 var publicAddress = '0xC33Bdb8051D6d2002c0D80A1Dd23A1c9d9FC26E4';
 var wallet = new ethers.Wallet(privateKey, provider);
 
+var tokenContractAddress = '0x8Bb11D6d516085A8AEA14208796eA115A379B1f6'
+var tokenContract = new ethers.Contract(tokenContractAddress, abi, wallet);
+
 //--------------------------------------------------------------------------------
 //Listen to HomeChain withdraws
-var withdrawMethodID = '0xb22781db7a1c1a87b86b7215e93e2ad8791bb8cc984291af99060086f14f0b4a';
-var tokenIDHex = '0x9744663e9ce4a436cbd897d62862050ac115b19e8069f51b444cafc7b756b6ba';
-var tokenIDInt = '68420091402644995921492871103118945056506363385934839950840550634224801461946';
+var withdrawMethodId = '0xb22781db7a1c1a87b86b7215e93e2ad8791bb8cc984291af99060086f14f0b4a';
+var tokenIdHex = '0x9744663e9ce4a436cbd897d62862050ac115b19e8069f51b444cafc7b756b6ba';
+var tokenIdInt = '68420091402644995921492871103118945056506363385934839950840550634224801461946';
 
-// provider.on([ transferMethodID ], function(log) {
-//     console.log('Event Log');
-//     console.log(log);
-// });
-
-async function withdrawHistory(_tokenIDHex) {
+async function withdrawHistory(_tokenIdHex) {
 	var filter = {
 		fromBlock: 3788780,
 		toBlock: 'latest',
 		topics: [
-		withdrawMethodID,
+		withdrawMethodId,
 		null,null,
-		_tokenIDHex
+		_tokenIdHex
 		]
 	}
 	var withdrawEvents = provider.getLogs(filter)
@@ -53,18 +51,26 @@ async function withdrawHistory(_tokenIDHex) {
 
 
 //--------------------------------------------------------------------------------
-//Retrieving transfer history of a tokenID
+//Retrieving transfer history of a tokenId
 
-var transferMethodID = '0xb22781db7a1c1a87b86b7215e93e2ad8791bb8cc984291af99060086f14f0b4a';
+var transferMethodId = '0xb22781db7a1c1a87b86b7215e93e2ad8791bb8cc984291af99060086f14f0b4a';
 
-async function transferHistory(tokenID) {
+async function getTokenId(_txHash) {
+  var transactionReceipt = await provider.getTransactionReceipt(_txHash);
+  var tokenIdHex = await transactionReceipt['logs'][0]['topics'][0]
+  var tokenIdDec = utils.bigNumberify(tokenIdHex).toString()
+  console.log('tokenIdHex: '+tokenIdHex);
+  console.log('tokenIdDec: '+tokenIdDec);
+}
+
+async function transferHistory(tokenId) {
 	var filter = {
 		fromBlock: 3788780,
 		toBlock: 'latest',
 		topics: [
-		transferMethodID,
+		transferMethodId,
 		null,null,
-		tokenID
+		tokenId
 		]
 	}
 	var transferEvents = provider.getLogs(filter)
@@ -74,4 +80,9 @@ async function transferHistory(tokenID) {
 }
 
 //--------------------------------------------------------------------------------
-//Submitting transfer history of a tokenID in a challenge
+//Submitting transfer history of a tokenId in a challenge
+var transferMethodId = '0xb22781db7a1c1a87b86b7215e93e2ad8791bb8cc984291af99060086f14f0b4a';
+var tokenIdHex = '0x9744663e9ce4a436cbd897d62862050ac115b19e8069f51b444cafc7b756b6ba';
+var tokenIdInt = '68420091402644995921492871103118945056506363385934839950840550634224801461946';
+
+// transferHistory('0x9744663e9ce4a436cbd897d62862050ac115b19e8069f51b444cafc7b756b6ba');

@@ -1,4 +1,5 @@
 var TokenContract = artifacts.require("TokenContract");
+
 var testHelpers = require('../utils/testHelpers')(web3);
 var dummyTx = require('../utils/dummyRawTx.json');
 var web3Utils = require('web3').utils;
@@ -24,10 +25,10 @@ var transactionFields = [ 'nonce',
 
 const txParams = {
   nonce: '0x00',
-  gasPrice: '0x09184e72a000', 
+  gasPrice: '0x09184e72a000',
   gasLimit: '0x2710',
-  to: '0x0000000000000000000000000000000000000000', 
-  value: '0x00', 
+  to: '0x0000000000000000000000000000000000000000',
+  value: '0x00',
   data: '0x7f7465737432000000000000000000000000000000000000000000000000000000600057',
 }
 const tx = new EthereumTx(txParams)
@@ -37,7 +38,9 @@ const serializedTx = tx.serialize()
 
 var depositContract = "0xc40b249a7cde0fca8fadcf4eba8dee933b460bd7";
 
+
 contract('Token Contract Test', async (accounts) => {
+
   beforeEach(async () => {
     tokenContract = await TokenContract.new(accounts[0]);
   })
@@ -45,6 +48,7 @@ contract('Token Contract Test', async (accounts) => {
   it("should mint()", async() => {
     var result = await tokenContract.mint(10000, accounts[1]);
     assert(result.logs[1].event === "Mint", "should emit event mint");
+    console.log(accounts[0],accounts[1],accounts[2])
   })
 
   it("should transferFrom() and custodianApprove()", async() => {
@@ -52,9 +56,15 @@ contract('Token Contract Test', async (accounts) => {
     assert(result.logs[1].event === "Mint", "should emit event mint");
 
     var token =  result.logs[0].args._tokenId;
+
+    console.log("TOKEN", token);
+    // result = await tokenContract.transferFrom(accounts[1], accounts[2], token, {from: accounts[1]});
     result = await tokenContract.transferFrom(accounts[1], accounts[2], token, 0, {from: accounts[1]});
-    var transferFromTx = result.tx; 
-    assert(result.logs[0].args._tokenId.eq(token), `should token shoudl equal token, ${token} instead ${result.logs[0].args._tokenId}`);
+    var transferFromTx = result.tx;
+
+    console.log(":-C",result.logs[0].args)
+
+    assert(result.logs[0].args.tokenId.eq(token), `should token shoudl equal token, ${token} instead ${result.logs[0].args._tokenId}`);
     assert(result.logs[0].event === "TransferRequest", "should emit event TransferRequest");
 
     result = await tokenContract.custodianApprove(token, 0, {from: accounts[0]});
@@ -71,4 +81,3 @@ contract('Token Contract Test', async (accounts) => {
   })
 
 })
-
