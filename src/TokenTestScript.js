@@ -1,19 +1,42 @@
+//------------------------------------------------------------------------------
 /*
-This script deploys and interacts with TokenContract.sol, using Monitor account.
+This script automates deployment of TokenContract and includes some test
+functions interacting with the contract
 */
+
+//------------------------------------------------------------------------------
+//Set parameters
+var network = 'rinkeby';
+var blockTimeDelay = 50000;
+var infuraAPI = '9744d40b99e34a57850802d4c6433ab8';
+var privateKey = '0x13410a539b4fdb8dabde37ff8d687cc' + 
+                 '23eea64ab11eaf348a2fd775ba71a31cc';
+var publicAddress = '0xC33Bdb8051D6d2002c0D80A1Dd23A1c9d9FC26E4';
+var publicAddress2 = '0x754eC60c051dF8524F9775712f8e46f36293Da9d';
+var tokenContract; 
+var tokenContractAddress; //to be set after deploying contract 
 
 //------------------------------------------------------------------------------
 //Require dependencies
 var ethers = require('ethers');
 var utils = require('ethers').utils;
-var infuraAPI = '9744d40b99e34a57850802d4c6433ab8';
-var provider = new ethers.providers.InfuraProvider(network='rinkeby',
-               apiAccessToken=infuraAPI);
+var provider = new ethers.providers.InfuraProvider(network = network, 
+                                                   apiAccessToken = infuraAPI);
 var fs = require('fs');
 var solc = require('solc');
 
 //------------------------------------------------------------------------------
-//Compile Solidity contract
+//Set wallet
+var wallet = new ethers.Wallet(privateKey, provider);
+
+//------------------------------------------------------------------------------
+//Write tests
+function test(_contractInstance){
+  mintCall(10000, publicAddress, _contractInstance);
+}
+
+//------------------------------------------------------------------------------
+//Compile contract
 var input = {
     language: "Solidity",
     sources: {
@@ -22,40 +45,44 @@ var input = {
     }
 }
 
-var output = solc.compile(input, 1)
-const bytecode = output.contracts['TokenContract_flat.sol:TokenContract']
-                       .bytecode;
-const abi = JSON.parse(output.contracts['TokenContract_flat.sol:TokenContract']
-                .interface);
-
-//------------------------------------------------------------------------------
-//Specify Monitor's account
-var privateKey = '0x13410a539b4fdb8dabde37ff8d687cc' +
-                 '23eea64ab11eaf348a2fd775ba71a31cc';
-var publicAddress = '0xC33Bdb8051D6d2002c0D80A1Dd23A1c9d9FC26E4';
-var publicAddress2 = '0x754eC60c051dF8524F9775712f8e46f36293Da9d';
-var wallet = new ethers.Wallet(privateKey, provider);
+var output = solc.compile(input, 1);
+const bytecode = output.contracts['TokenContract_flat.sol:TokenContract'].
+                 bytecode;
+const abi = JSON.parse(output.contracts['TokenContract_flat.sol:TokenContract'].
+                       interface);
 
 //------------------------------------------------------------------------------
 //Interacting with blockchain
-function contractInstance(_addr, _abi, _wallet){
-  var contractInstance = new ethers.Contract(_addr, _abi, _wallet);
-  return contractInstance
-}
-
-async function deployContract(_bytecode, _abi, _publicAddress){
-  var deployTransaction = ethers.Contract.getDeployTransaction("0x"+_bytecode,
-                          _abi, _publicAddress);
-  var tx = await wallet.sendTransaction(deployTransaction)
-  var txHash = tx['hash']
-  console.log('txHash: ' + txHash)
-  return txHash
-}
-
 async function getAddr(_txHash){
     var tx = await provider.getTransactionReceipt(_txHash)
     var addr = await tx['contractAddress']
     return addr
+}
+
+async function instantiateContract(_addr, _abi, _wallet){
+  console.log(_addr);
+  var contractInstance = await new ethers.Contract(_addr, _abi, _wallet);
+  await console.log("Contract instantiated");
+  tokenContract = await contractInstance;
+  return await contractInstance;
+}
+
+async function deployContract(_bytecode, _abi, _publicAddress, callback){
+  var deployTransaction = ethers.Contract.getDeployTransaction("0x"+_bytecode, 
+                                                               _abi, 
+                                                               _publicAddress);
+  deployTransaction.gasLimit = 3500000;
+  var tx = await wallet.sendTransaction(deployTransaction);
+  var txHash = tx['hash'];
+  console.log('Creating deployment transaction ' + txHash);
+  console.log("Waiting for transaction to be included in a block...")
+  setTimeout(async function() {
+    var contractAddr = await getAddr(txHash);
+    await console.log("Contract deployed at address " + contractAddr);
+    tokenContractAddress = await contractAddr;
+    await callback(contractAddr, abi, wallet);
+  }, blockTimeDelay);
+
 }
 
 async function getTokenId(_txHash) {
@@ -70,7 +97,6 @@ async function getTransactionReceipt(_txHash) {
     var transactionReceipt = await provider.getTransactionReceipt(_txHash);
     console.log(transactionReceipt);
 }
-
 
 //------------------------------------------------------------------------------
 //Interacting with contract instance
@@ -98,34 +124,22 @@ async function transferCall(_from, _to, _tokenId, _nonce, _contractInstance) {
   console.log(result);
 }
 
-//----------------------------------------------------------------------------------
-//Testing functions
-
-async function test(){
-  var deployTxHash = await deployContract(bytecode, abi, publicAddress)
-  //wait 30 seconds to read address of contract
+// ----------------------------------------------------------------------------------
+// Testing functions
+function deployContractAndTest(callback){
+  var tokenContract = deployContract(bytecode, abi, publicAddress, instantiateContract);
   setTimeout(async function() {
-    var contractAddr = await getAddr(deployTxHash)
-    await console.log("Contract deployed at address " + contractAddr)
-    var tokenContract = await contractInstance(contractAddr, abi, wallet)
-    await console.log("Contract instance created")
-    await mintCall(10000, publicAddress, tokenContract)
-  }, 40000);
+    await console.log(tokenContract)
+    await callback(tokenContract);
+  }, blockTimeDelay + 50);
 }
 
-// getTokenId('0xb6a6f225c2e0c78b37a7ec101b8f2806b35cf3b01f8e92e940c74de2594057e5')
+deployContractAndTest(test)
 
-var contractAddr = "0x93DBC7AFAbF7bd1E3c726D69215e319b5F61a3aA"
-var tokenContract = contractInstance(contractAddr, abi, wallet)
-// mintCall(10000, publicAddress, tokenContract)
+// test = async () => { 
+// return new Promise((res,rej) => {
+// setTimeout(() => {return res("a")},3000);
+// })
+// }
 
-transferCall(publicAddress, publicAddress2,
-  '0x65b4424b82a7a387fc4dbff605b6059c60a14efc7edf40104c79adedfb99d9d2', 1,
-  tokenContract)
-
-
-// getTokenId('0x87136973e73006f6435af353bda0e1f42b39eeb7825d586c1f07d6b9de0c8298')
-
-
-// ownerOfCall('56064289943568641797652870540193695909662562700408150778951987980509060591558')
-// ownerOfCall(tokenIdInt);
+// test().then(res => console.log(res))
