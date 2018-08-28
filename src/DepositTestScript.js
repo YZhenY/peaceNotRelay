@@ -7,14 +7,13 @@ functions interacting with the contract
 //------------------------------------------------------------------------------
 //Set parameters
 var network = 'rinkeby';
-var blockTimeDelay = 50000;
+var blockTimeDelay = 30000;
 var infuraAPI = '9744d40b99e34a57850802d4c6433ab8';
 var privateKey = '0x13410a539b4fdb8dabde37ff8d687cc' + 
                  '23eea64ab11eaf348a2fd775ba71a31cc';
 var publicAddress = '0xC33Bdb8051D6d2002c0D80A1Dd23A1c9d9FC26E4';
 var publicAddress2 = '0x754eC60c051dF8524F9775712f8e46f36293Da9d';
-var tokenContract; 
-var tokenContractAddress; //to be set after deploying contract 
+var tokenContractAddress = "0x222d1788a32b0db878b25a9495F3Db069E935Dee";
 
 //------------------------------------------------------------------------------
 //Require dependencies
@@ -34,14 +33,34 @@ var wallet = new ethers.Wallet(privateKey, provider);
 var input = {
     language: "Solidity",
     sources: {
-        'DepositContract_flat.sol': 
+        'DepositContract_flat.sol':
         fs.readFileSync('../contracts/DepositContract_flat.sol','utf8')
     }
 }
 
-var output = solc.compile(input, 1)
-const bytecode = output.contracts['DepositContract_flat.sol:DepositContract'].bytecode;
-const abi = JSON.parse(output.contracts['DepositContract_flat.sol:DepositContract'].interface);
+var output = solc.compile(input, 1);
+const bytecode = output.contracts['DepositContract_flat.sol:DepositContract'].
+                 bytecode;
+const abi = JSON.parse(output.contracts['DepositContract_flat.sol:DepositContract'].
+                       interface);
+
+//------------------------------------------------------------------------------
+//Write tests
+async function testFunctions(_contractInstance){
+  var txHash = await mintCall(10000, publicAddress, _contractInstance);
+  setTimeout(async function() {
+    var tokenId = await getTokenId(txHash);
+    setTimeout(async function() {
+      var tokenId = await getTokenId(txHash);
+      setTimeout(async function() {
+        transferCall(publicAddress, publicAddress2, tokenId, 0, _contractInstance);
+      }, blockTimeDelay)
+    }, blockTimeDelay)
+  }, blockTimeDelay)
+}
+
+//Deploy tests
+deployContractAndTest(testFunctions);
 
 //------------------------------------------------------------------------------
 //Interacting with blockchain
@@ -81,6 +100,9 @@ async function getTransactionReceipt(_txHash) {
 
 //--------------------------------------------------------------------------------
 //Interacting with DepositContract
+
+async function 
+
 
 async function depositCall(_amt, _mintHash, _minter) {
     var result = await depositContract.deposit.value(_amt)(_mintHash, _minter);
