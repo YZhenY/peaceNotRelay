@@ -7,8 +7,10 @@ functions interacting with the contract
 //------------------------------------------------------------------------------
 //Set parameters
 var network = 'rinkeby';
+var blockTimeDelay = 50000;
 var infuraAPI = '9744d40b99e34a57850802d4c6433ab8';
-var privateKey = '0x13410a539b4fdb8dabde37ff8d687cc23eea64ab11eaf348a2fd775ba71a31cc';
+var privateKey = '0x13410a539b4fdb8dabde37ff8d687cc' + 
+                 '23eea64ab11eaf348a2fd775ba71a31cc';
 var publicAddress = '0xC33Bdb8051D6d2002c0D80A1Dd23A1c9d9FC26E4';
 var publicAddress2 = '0x754eC60c051dF8524F9775712f8e46f36293Da9d';
 var tokenContract; 
@@ -18,7 +20,8 @@ var tokenContractAddress; //to be set after deploying contract
 //Require dependencies
 var ethers = require('ethers');
 var utils = require('ethers').utils;
-var provider = new ethers.providers.InfuraProvider(network='rinkeby', apiAccessToken=infuraAPI);
+var provider = new ethers.providers.InfuraProvider(network = network, 
+                                                   apiAccessToken = infuraAPI);
 var fs = require('fs');
 var solc = require('solc');
 

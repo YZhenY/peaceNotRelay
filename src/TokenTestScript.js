@@ -31,8 +31,17 @@ var wallet = new ethers.Wallet(privateKey, provider);
 
 //------------------------------------------------------------------------------
 //Write tests
-function test(_contractInstance){
-  mintCall(10000, publicAddress, _contractInstance);
+async function testFunctions(_contractInstance){
+  var txHash = await mintCall(10000, publicAddress, _contractInstance);
+  setTimeout(async function() {
+    var tokenId = await getTokenId(txHash);
+    setTimeout(async function() {
+      var tokenId = await getTokenId(txHash);
+      setTimeout(async function() {
+        transferCall(publicAddress, publicAddress2, tokenId, 0, _contractInstance);
+      }, blockTimeDelay)
+    }, blockTimeDelay)
+  }, blockTimeDelay)
 }
 
 //------------------------------------------------------------------------------
@@ -53,36 +62,38 @@ const abi = JSON.parse(output.contracts['TokenContract_flat.sol:TokenContract'].
 
 //------------------------------------------------------------------------------
 //Interacting with blockchain
+
+function resolveAfterBlockTimeDelay(_promise) {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      resolve(_promise);
+    }, blockTimeDelay + 50);
+  });
+}
+
 async function getAddr(_txHash){
     var tx = await provider.getTransactionReceipt(_txHash)
     var addr = await tx['contractAddress']
     return addr
 }
 
-async function instantiateContract(_addr, _abi, _wallet){
-  console.log(_addr);
-  var contractInstance = await new ethers.Contract(_addr, _abi, _wallet);
-  await console.log("Contract instantiated");
-  tokenContract = await contractInstance;
-  return await contractInstance;
-}
-
-async function deployContract(_bytecode, _abi, _publicAddress, callback){
+async function deployContract(_bytecode, _abi, _publicAddress){
   var deployTransaction = ethers.Contract.getDeployTransaction("0x"+_bytecode, 
                                                                _abi, 
                                                                _publicAddress);
   deployTransaction.gasLimit = 3500000;
   var tx = await wallet.sendTransaction(deployTransaction);
-  var txHash = tx['hash'];
-  console.log('Creating deployment transaction ' + txHash);
-  console.log("Waiting for transaction to be included in a block...")
-  setTimeout(async function() {
-    var contractAddr = await getAddr(txHash);
-    await console.log("Contract deployed at address " + contractAddr);
-    tokenContractAddress = await contractAddr;
-    await callback(contractAddr, abi, wallet);
-  }, blockTimeDelay);
+  var txHash = await tx['hash'];
+  await console.log('Created deployment transaction ' + txHash);
+  return txHash;
+}
 
+async function instantiateContract(_addr, _abi, _wallet){
+  console.log(_addr);
+  var contractInstance = await new ethers.Contract(_addr, _abi, _wallet);
+  await console.log("Contract instantiated");
+  var tokenContract = await resolveAfterBlockTimeDelay(contractInstance);
+  return tokenContract;
 }
 
 async function getTokenId(_txHash) {
@@ -91,6 +102,7 @@ async function getTokenId(_txHash) {
   var tokenIdDec = utils.bigNumberify(tokenIdHex).toString()
   console.log('tokenIdHex: '+tokenIdHex);
   console.log('tokenIdDec: '+tokenIdDec);
+  return tokenIdHex;
 }
 
 async function getTransactionReceipt(_txHash) {
@@ -103,11 +115,10 @@ async function getTransactionReceipt(_txHash) {
 
 async function mintCall(_amt, _publicAddress, _contractInstance) {
     var result = await _contractInstance.mint(_amt, _publicAddress);
-    var txHash = (result['hash']);
-    console.log('mint() txHash: ' + txHash);
+    var txHash = await (result['hash']);
+    await console.log('mint() txHash: ' + txHash);
     return txHash
 }
-
 
 async function ownerOfCall(_tokenIdInt, _contractInstance) {
     var result = await _contractInstance.ownerOf(_tokenIdInt);
@@ -115,31 +126,33 @@ async function ownerOfCall(_tokenIdInt, _contractInstance) {
 }
 
 async function transferCall(_from, _to, _tokenId, _nonce, _contractInstance) {
-  var result = await _contractInstance.transferFrom(
+  var tx = await _contractInstance.transferFrom(
     _from,
     _to,
     _tokenId,
     _nonce
   );
-  console.log(result);
+  var txHash = await tx['hash'];
+  await console.log("tokenId " + _tokenId + "transferred from " + _from + "to " + _to 
+                    + "in transaction " + txHash);
 }
 
 // ----------------------------------------------------------------------------------
 // Testing functions
-function deployContractAndTest(callback){
-  var tokenContract = deployContract(bytecode, abi, publicAddress, instantiateContract);
+
+async function deployContractAndTest(_testFunctions){
+  var txHash = await deployContract(bytecode, abi, publicAddress);
   setTimeout(async function() {
-    await console.log(tokenContract)
-    await callback(tokenContract);
-  }, blockTimeDelay + 50);
+    var contractAddr = await getAddr(txHash);
+    await console.log("Contract deployed at address " + contractAddr);
+    tokenContractAddress = await contractAddr;
+    tokenContract = await instantiateContract(contractAddr, abi, wallet);
+    await _testFunctions(tokenContract)
+  }, blockTimeDelay);
 }
 
-deployContractAndTest(test)
+deployContractAndTest(testFunctions)
 
-// test = async () => { 
-// return new Promise((res,rej) => {
-// setTimeout(() => {return res("a")},3000);
-// })
-// }
 
-// test().then(res => console.log(res))
+
+
