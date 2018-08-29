@@ -12,7 +12,11 @@ var infuraAPI = '9744d40b99e34a57850802d4c6433ab8';
 var privateKey = '0x13410a539b4fdb8dabde37ff8d687cc' +
                  '23eea64ab11eaf348a2fd775ba71a31cc';
 var publicAddress = '0xC33Bdb8051D6d2002c0D80A1Dd23A1c9d9FC26E4';
+var privateKey2 = '34a1c7257c8a0f6e44b991370d3bd22d' +
+                  '761cdc07d106ff0ff59191e66fa31081';
 var publicAddress2 = '0x754eC60c051dF8524F9775712f8e46f36293Da9d';
+var privateKey3 = 'e850b670f1ed2225708c2700c085d4da' +
+                  '3bea80d221fe8c34eb0672e88e2e9e79';
 var publicAddress3 = '0x8CCd089c3208C9D6cd171dddEEbBa6bA185Ab5A9';
 var tokenContractAddress; //to be set after deploying contract
 
@@ -56,36 +60,30 @@ async function testFunctions(_contractInstance){
   }, blockTimeDelay)
   setTimeout(async function() {
     ownerOfCall(tokenId, _contractInstance);
-  }, blockTimeDelay*2)
-  setTimeout(async function() {
     transferTxHash = await transferCall(publicAddress, publicAddress2,
                                         tokenId, 0, _contractInstance);
-  }, blockTimeDelay*3)
+  }, blockTimeDelay*2)
   setTimeout(async function() {
     nonce = await getNonceFromTransferRequest(transferTxHash);
-  }, blockTimeDelay*4)
+  }, blockTimeDelay*3)
   setTimeout(async function() {
     custodianApproveCall(tokenId, nonce, _contractInstance);
+  }, blockTimeDelay*4)
+  setTimeout(async function() {
+    ownerOfCall(tokenId, _contractInstance);
+    transferTxHash2 = await transferCall(publicAddress2, publicAddress3,
+                                         tokenId, 1, _contractInstance);
   }, blockTimeDelay*5)
   setTimeout(async function() {
     ownerOfCall(tokenId, _contractInstance);
+    nonce2 = await getNonceFromTransferRequest(transferTxHash2);
   }, blockTimeDelay*6)
   setTimeout(async function() {
-    transferTxHash2 = await transferCall(publicAddress2, publicAddress3,
-                                         tokenId, 1, _contractInstance);
+    custodianApproveCall(tokenId, nonce2, _contractInstance);
   }, blockTimeDelay*7)
   setTimeout(async function() {
     ownerOfCall(tokenId, _contractInstance);
   }, blockTimeDelay*8)
-  setTimeout(async function() {
-    nonce2 = await getNonceFromTransferRequest(transferTxHash2);
-  }, blockTimeDelay*9)
-  setTimeout(async function() {
-    custodianApproveCall(tokenId, nonce2, _contractInstance);
-  }, blockTimeDelay*10)
-  setTimeout(async function() {
-    ownerOfCall(tokenId, _contractInstance);
-  }, blockTimeDelay*11)
 }
 
 async function deployContractAndTest(_testFunctions){
@@ -178,7 +176,8 @@ async function ownerOfCall(_tokenId, _contractInstance) {
 }
 
 async function transferCall(_from, _to, _tokenId, _declaredNonce, _contractInstance) {
-  var tx = await _contractInstance.transferFrom(_from, _to, _tokenId, _declaredNonce);
+  var tx = await _contractInstance.transferFrom(_from, _to, _tokenId, _declaredNonce,
+                                                {from: _from});
   var txHash = await getTxHash(tx);
   await console.log("tokenId " + _tokenId + " transferred from address " +
                     _from + " to address " + _to + " in transaction " + txHash);
