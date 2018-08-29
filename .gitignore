@@ -1,3 +1,5 @@
 node_modules
 private.json
 .DS_Store
+.vscode
+datest.log

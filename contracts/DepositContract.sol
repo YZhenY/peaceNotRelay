@@ -58,7 +58,8 @@ contract DepositContract {
   }
 
   event Deposit(address indexed depositer, uint256 amount, uint256 tokenId, address minter);
-  event Challenge(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber);
+  event ChallengeInitiated(address indexed challenger, address indexed depositedTo, uint256 tokenId);
+  event Challenge(address indexed rechallenger, address indexed depositedTo, uint256 tokenId, uint256 finalChallengeNonce);
   event ChallengeResolved(uint256 tokenId);
   event Withdrawal(address indexed withdrawer, uint256 indexed tokenId, uint256 stakedAmount);
 
@@ -178,7 +179,8 @@ contract DepositContract {
             "the challenge period has not started yet");
     require(challengeTime[_tokenId] < now,
             "the challenge period has not ended yet");
-    require(challengeNonce[_tokenId] == challengeEndNonce[_tokenId] ||
+    //challengeNonce represents the requirement for the next tx (thus the +1)
+    require(challengeNonce[_tokenId] == challengeEndNonce[_tokenId] + 1 ||
                                         challengeNonce[_tokenId] == 0,
             "either a challenge has started, or the challenge response has not been proven to endNonce");
     challengeRecipient[_tokenId].send((tokenIdToAmount[_tokenId] ) +
@@ -285,6 +287,7 @@ contract DepositContract {
     challengeStake[_tokenId] += msg.value;
     challenger[_tokenId] = _to;
     challengeNonce[_tokenId] = 1;
+    emit ChallengeInitiated(msg.sender, _to, _tokenId);
   }
 
   /*
@@ -323,12 +326,15 @@ contract DepositContract {
               "needs to refer to the same tokenId");
       require(tokenIdToMinter[_tokenId] == parseData(transferTx[5].toData(), 1).toAddress(12),
               "token needs to be transfered from last proven custody");
+      require(parseData(transferTx[5].toData(),4).toUint(0) == challengeNonce[_tokenId], 
+              "nonce needs to equal required challengeNonce");
+
       //moves up root mint referecce to recipient address
       tokenIdToMinter[_tokenId] = parseData(transferTx[5].toData(), 2).toAddress(12);
       //updates challengeNonce to next step
       challengeNonce[_tokenId] += 1;
     }
-
+    emit Challenge(msg.sender, _to, _tokenId, challengeNonce[_tokenId]);
   }
 
   /*
