@@ -6,7 +6,6 @@ This script provides helper functions for testing DepositContract.sol
 //------------------------------------------------------------------------------
 //Set parameters
 var network = 'rinkeby';
-var blockTimeDelay = 40000;
 var infuraAPI = '9744d40b99e34a57850802d4c6433ab8';
 var privateKey = '0x13410a539b4fdb8dabde37ff8d687cc' +
                  '23eea64ab11eaf348a2fd775ba71a31cc';

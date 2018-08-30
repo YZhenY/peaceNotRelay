@@ -27,7 +27,7 @@ var fs = require('fs');
 var solc = require('solc');
 var provider = new ethers.providers.InfuraProvider(network = network,
                                                    apiAccessToken = infuraAPI);
-const tokenTestHelper = require('./TokenTestHelper.js');
+const depositTestHelper = require('./DepositTestHelper.js');
 
 //------------------------------------------------------------------------------
 //Set wallets
@@ -40,14 +40,14 @@ var wallet3 = new ethers.Wallet(privateKey3, provider);
 var input = {
     language: "Solidity",
     sources: {
-      'TokenContract_flat.sol':
-      fs.readFileSync('../contracts/TokenContract_flat.sol','utf8')
+      'DepositContract_flat.sol':
+      fs.readFileSync('../contracts/DepositContract_flat.sol','utf8')
     }
 }
 var output = solc.compile(input, 1);
-const bytecode = output.contracts['TokenContract_flat.sol:TokenContract'].
+const bytecode = output.contracts['DepositContract_flat.sol:DepositContract'].
                  bytecode;
-const abi = JSON.parse(output.contracts['TokenContract_flat.sol:TokenContract'].
+const abi = JSON.parse(output.contracts['DepositContract_flat.sol:DepositContract'].
                        interface);
 
 //------------------------------------------------------------------------------
@@ -66,4 +66,5 @@ async function testFunctions(_contractInstance){
 }
 
 //Deploy tests
-deployContractAndTest(testFunctions);
+// deployContractAndTest(testFunctions);
+depositTestHelper.deployContract(bytecode, abi, publicAddress, wallet)
