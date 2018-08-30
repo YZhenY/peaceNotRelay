@@ -33,8 +33,8 @@ module.exports = {
   //------------------------------------------------------------------------------
   //Interacting with blockchain
   getNonceFromTransferRequest: async function(_txHash){
-    var transactionReceipt = await provider.module.exports.getTransactionReceipt(_txHash);
-    var nonce = await transactionReceipt['logs'][0]['data'][0];
+    var transactionReceipt = await provider.getTransactionReceipt(_txHash);
+    var nonce = await transactionReceipt['logs'][0]['data'][65];
     await console.log("Nonce: " + nonce);
     return nonce;
   },
@@ -45,24 +45,19 @@ module.exports = {
   },
 
   getAddr: async function(_txHash){
-    var tx = await provider.module.exports.getTransactionReceipt(_txHash);
+    var tx = await provider.getTransactionReceipt(_txHash);
     var addr = await tx['contractAddress'];
     await console.log("Contract deployed at: " + addr);
     return addr
   },
 
   getTokenIdFromMint: async function(_mintTxHash) {
-    var transactionReceipt = await provider.module.exports.getTransactionReceipt(_mintTxHash);
+    var transactionReceipt = await provider.getTransactionReceipt(_mintTxHash);
     var tokenIdHex = await transactionReceipt['logs'][0]['topics'][3]
     var tokenIdDec = utils.bigNumberify(tokenIdHex).toString()
     console.log('tokenIdHex: '+tokenIdHex);
     console.log('tokenIdDec: '+tokenIdDec);
     return tokenIdHex;
-  },
-
-  getTransactionReceipt: async function(_txHash) {
-      var transactionReceipt = await provider.module.exports.getTransactionReceipt(_txHash);
-      console.log(transactionReceipt);
   },
 
   deployContract: async function(_bytecode, _abi, _publicAddress, _wallet){
