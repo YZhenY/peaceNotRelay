@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 /*
-This script provides helper functions for testing TokenContract.sol
+This script provides helper functions for testing DepositContract.sol
 */
 
 //------------------------------------------------------------------------------
@@ -62,50 +62,18 @@ module.exports = {
     return tokenContract;
   },
 
-  getTokenIdFromMint: async function(_mintTxHash) {
-    var transactionReceipt = await provider.getTransactionReceipt(_mintTxHash);
-    var tokenIdHex = await transactionReceipt['logs'][0]['topics'][3]
-    var tokenIdDec = utils.bigNumberify(tokenIdHex).toString()
-    console.log('tokenIdHex: '+tokenIdHex);
-    console.log('tokenIdDec: '+tokenIdDec);
-    return tokenIdHex;
-  },
+  //--------------------------------------------------------------------------------
+  //Interacting with DepositContract instance
 
-  getNonceFromTransferRequest: async function(_txHash){
-    var transactionReceipt = await provider.getTransactionReceipt(_txHash);
-    var nonce = await transactionReceipt['logs'][0]['data'][65];
-    await console.log("Nonce: " + nonce);
-    return nonce;
-  },
-
-  //------------------------------------------------------------------------------
-  //Interacting with TokenContract instance
-
-  mintCall: async function(_amt, _publicAddress, _contractInstance) {
-      var result = await _contractInstance.mint(_amt, _publicAddress);
-      var txHash = await module.exports.getTxHash(result);
-      await console.log('mint() txHash: ' + txHash);
-      return txHash;
-  },
-
-  custodianApproveCall: async function(_tokenId, _declaredNonce, _contractInstance){
-    var result = await _contractInstance.custodianApprove(_tokenId, _declaredNonce);
+  depositCall: async function(_amt, _mintHash, _minter, _contractInstance) {
+    var result = await _contractInstance.deposit.value(_amt)(_mintHash, _minter);
     var txHash = await module.exports.getTxHash(result);
-    await console.log('Transfer approved at tx: ' + txHash);
+    await console.log('deposit() txHash: ' + txHash);
     return txHash;
   },
 
   ownerOfCall: async function(_tokenId, _contractInstance) {
-      var result = await _contractInstance.ownerOf(_tokenId);
-      console.log(result+ " is owner of tokenId " + _tokenId);
-  },
-
-  transferCall: async function(_from, _to, _tokenId, _declaredNonce, _contractInstance) {
-    var tx = await _contractInstance.transferFrom(_from, _to, _tokenId, _declaredNonce);
-    var txHash = await module.exports.getTxHash(tx);
-    await console.log("tokenId " + _tokenId + " transferred from address " +
-                      _from + " to address " + _to + " in transaction " + txHash);
-    return txHash;
+    var result = await _contractInstance.ownerOf(_tokenId);
+    console.log(result+ " is owner of tokenId " + _tokenId);
   }
-
 }

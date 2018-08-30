@@ -107,5 +107,4 @@ async function deployContractAndTest(_testFunctions){
 }
 
 //Deploy tests
-// deployContractAndTest(testFunctions);
-console.log(output.contracts['TokenContract_flat.sol:TokenContract'].runtimeBytecode)
+deployContractAndTest(testFunctions);
