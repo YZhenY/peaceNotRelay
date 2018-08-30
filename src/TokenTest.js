@@ -6,7 +6,7 @@ functions interacting with the contract
 
 //------------------------------------------------------------------------------
 //Set parameters
-var network = 'rinkeby';
+var network = 'rinkeby'; //'rinkeby', 'ropsten', 'kovan', 'homestead'
 var blockTimeDelay = 40000;
 var infuraAPI = '9744d40b99e34a57850802d4c6433ab8';
 var privateKey = '0x13410a539b4fdb8dabde37ff8d687cc' +
@@ -60,7 +60,7 @@ async function testFunctions(_contractInstance, _contractInstance2){
   var transferTxHash;
   var nonce;
   setTimeout(async function() {
-    tokenId = await tokenTestHelper.getTokenIdFromMint(mintTxHash);
+    tokenId = await tokenTestHelper.getTokenIdFromMint(mintTxHash, provider);
   }, blockTimeDelay)
   setTimeout(async function() {
     await tokenTestHelper.ownerOfCall(tokenId, _contractInstance);
@@ -71,7 +71,7 @@ async function testFunctions(_contractInstance, _contractInstance2){
                                                         _contractInstance);
   }, blockTimeDelay*2)
   setTimeout(async function() {
-    nonce = await tokenTestHelper.getNonceFromTransferRequest(transferTxHash);
+    nonce = await tokenTestHelper.getNonceFromTransferRequest(transferTxHash, provider);
   }, blockTimeDelay*3)
   setTimeout(async function() {
     await tokenTestHelper.custodianApproveCall(tokenId, nonce, _contractInstance);
@@ -86,7 +86,7 @@ async function testFunctions(_contractInstance, _contractInstance2){
   }, blockTimeDelay*5)
   setTimeout(async function() {
     await tokenTestHelper.ownerOfCall(tokenId, _contractInstance);
-    nonce2 = await tokenTestHelper.getNonceFromTransferRequest(transferTxHash2);
+    nonce2 = await tokenTestHelper.getNonceFromTransferRequest(transferTxHash2, provider);
   }, blockTimeDelay*6)
   setTimeout(async function() {
     await tokenTestHelper.custodianApproveCall(tokenId, nonce2, _contractInstance);
@@ -99,7 +99,7 @@ async function testFunctions(_contractInstance, _contractInstance2){
 async function deployContractAndTest(_testFunctions){
   var txHash = await tokenTestHelper.deployContract(bytecode, abi, publicAddress, wallet);
   setTimeout(async function() {
-    var contractAddr = await tokenTestHelper.getAddr(txHash);
+    var contractAddr = await tokenTestHelper.getAddr(txHash, provider);
     var tokenContract = await tokenTestHelper.instantiateContract(contractAddr, abi, wallet);
     var tokenContract2 = await tokenTestHelper.instantiateContract(contractAddr, abi, wallet2);
     _testFunctions(tokenContract, tokenContract2)

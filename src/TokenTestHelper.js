@@ -4,28 +4,11 @@ This script provides helper functions for testing TokenContract.sol
 */
 
 //------------------------------------------------------------------------------
-//Set parameters
-var network = 'rinkeby';
-var infuraAPI = '9744d40b99e34a57850802d4c6433ab8';
-var privateKey = '0x13410a539b4fdb8dabde37ff8d687cc' +
-                 '23eea64ab11eaf348a2fd775ba71a31cc';
-var publicAddress = '0xC33Bdb8051D6d2002c0D80A1Dd23A1c9d9FC26E4';
-var privateKey2 = '0x34a1c7257c8a0f6e44b991370d3bd22' +
-                  'd761cdc07d106ff0ff59191e66fa31081';
-var publicAddress2 = '0x754eC60c051dF8524F9775712f8e46f36293Da9d';
-var privateKey3 = '0xe850b670f1ed2225708c2700c085d4d' +
-                  'a3bea80d221fe8c34eb0672e88e2e9e79';
-var publicAddress3 = '0x8CCd089c3208C9D6cd171dddEEbBa6bA185Ab5A9';
-var tokenContractAddress; //to be set after deploying contract
-
-//------------------------------------------------------------------------------
 //Require dependencies
 var ethers = require('ethers');
 var utils = require('ethers').utils;
 var fs = require('fs');
 var solc = require('solc');
-var provider = new ethers.providers.InfuraProvider(network = network,
-                                                   apiAccessToken = infuraAPI);
 
 module.exports = {
   //------------------------------------------------------------------------------
@@ -36,8 +19,8 @@ module.exports = {
     return txHash;
   },
 
-  getAddr: async function(_txHash){
-    var tx = await provider.getTransactionReceipt(_txHash);
+  getAddr: async function(_txHash, _provider){
+    var tx = await _provider.getTransactionReceipt(_txHash);
     var addr = await tx['contractAddress'];
     await console.log("Contract deployed at: " + addr);
     return addr
@@ -61,8 +44,8 @@ module.exports = {
     return tokenContract;
   },
 
-  getTokenIdFromMint: async function(_mintTxHash) {
-    var transactionReceipt = await provider.getTransactionReceipt(_mintTxHash);
+  getTokenIdFromMint: async function(_mintTxHash, _provider) {
+    var transactionReceipt = await _provider.getTransactionReceipt(_mintTxHash);
     var tokenIdHex = await transactionReceipt['logs'][0]['topics'][3]
     var tokenIdDec = utils.bigNumberify(tokenIdHex).toString()
     console.log('tokenIdHex: '+tokenIdHex);
@@ -70,8 +53,8 @@ module.exports = {
     return tokenIdHex;
   },
 
-  getNonceFromTransferRequest: async function(_txHash){
-    var transactionReceipt = await provider.getTransactionReceipt(_txHash);
+  getNonceFromTransferRequest: async function(_txHash, _provider){
+    var transactionReceipt = await _provider.getTransactionReceipt(_txHash);
     var nonce = await transactionReceipt['logs'][0]['data'][65];
     await console.log("Nonce: " + nonce);
     return nonce;

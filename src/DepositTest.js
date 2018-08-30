@@ -6,7 +6,7 @@ functions interacting with the contract
 
 //------------------------------------------------------------------------------
 //Set parameters
-var network = 'rinkeby';
+var network = 'ropsten'; //'rinkeby', 'ropsten', 'kovan', 'homestead'
 var blockTimeDelay = 40000;
 var infuraAPI = '9744d40b99e34a57850802d4c6433ab8';
 var privateKey = '0x13410a539b4fdb8dabde37ff8d687cc' +
@@ -28,6 +28,7 @@ var solc = require('solc');
 var provider = new ethers.providers.InfuraProvider(network = network,
                                                    apiAccessToken = infuraAPI);
 const depositTestHelper = require('./DepositTestHelper.js');
+const tokenTestHelper = require('./TokenTestHelper.js');
 
 //------------------------------------------------------------------------------
 //Set wallets
@@ -51,6 +52,12 @@ const abi = JSON.parse(output.contracts['DepositContract_flat.sol:DepositContrac
                        interface);
 
 //------------------------------------------------------------------------------
+//Specify TokenContract parameters
+var tokenContractAddress = '0xEdD915279BeA923815D89cE5edDDca3fcC4167e0';
+var tokenIdDec = 16118818340691892296820170890762028606357708147991905105415102369943739718021
+var tokenIdHex = '0x23a2ed894fa2aa535bd368dac20708426157125cf901ad4d16ca2d9f90045985'
+
+//------------------------------------------------------------------------------
 //Write tests
 async function testFunctions(_contractInstance){
  var txHash = await mintCall(10000, publicAddress, _contractInstance);
@@ -64,6 +71,17 @@ async function testFunctions(_contractInstance){
    }, blockTimeDelay)
  }, blockTimeDelay)
 }
+
+async function deployContractAndTest(_testFunctions){
+  var txHash = await depositTestHelper.deployContract(bytecode, abi, publicAddress, wallet);
+  setTimeout(async function() {
+    var contractAddr = await depositTestHelper.getAddr(txHash, provider);
+    var tokenContract = await depositTestHelper.instantiateContract(contractAddr, abi, wallet);
+    var tokenContract2 = await depositTestHelper.instantiateContract(contractAddr, abi, wallet2);
+    _testFunctions(tokenContract, tokenContract2)
+  }, blockTimeDelay);
+}
+
 
 //Deploy tests
 // deployContractAndTest(testFunctions);

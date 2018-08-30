@@ -43,12 +43,12 @@ module.exports = {
     return addr
   },
 
-  deployContract: async function(_bytecode, _abi, _publicAddress, _wallet){
+  deployContract: async function(_bytecode, _abi, _publicAddress, _wallet, _value){
     var deployTransaction = ethers.Contract.getDeployTransaction("0x"+_bytecode,
                                                                  _abi,
                                                                  _publicAddress);
     deployTransaction.gasLimit = 3500000;
-    var tx = await _wallet.sendTransaction(deployTransaction);
+    var tx = await _wallet.sendTransaction(deployTransaction, {value: _value});
     var txHash = await module.exports.getTxHash(tx);
     await console.log('Created deployment transaction ' + txHash);
     return txHash;
