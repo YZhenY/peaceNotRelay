@@ -5,7 +5,7 @@ This script provides helper functions for testing DepositContract.sol
 
 //------------------------------------------------------------------------------
 //Set parameters
-var network = 'rinkeby';
+var network = 'ropsten';
 var infuraAPI = '9744d40b99e34a57850802d4c6433ab8';
 var privateKey = '0x13410a539b4fdb8dabde37ff8d687cc' +
                  '23eea64ab11eaf348a2fd775ba71a31cc';
@@ -36,19 +36,19 @@ module.exports = {
     return txHash;
   },
 
-  getAddr: async function(_txHash){
-    var tx = await provider.getTransactionReceipt(_txHash);
+  getAddr: async function(_txHash, _provider){
+    var tx = await _provider.getTransactionReceipt(_txHash);
     var addr = await tx['contractAddress'];
     await console.log("Contract deployed at: " + addr);
     return addr
   },
 
-  deployContract: async function(_bytecode, _abi, _publicAddress, _wallet, _value){
+  deployContract: async function(_bytecode, _abi, _publicAddress, _wallet){
     var deployTransaction = ethers.Contract.getDeployTransaction("0x"+_bytecode,
                                                                  _abi,
                                                                  _publicAddress);
     deployTransaction.gasLimit = 3500000;
-    var tx = await _wallet.sendTransaction(deployTransaction, {value: _value});
+    var tx = await _wallet.sendTransaction(deployTransaction);
     var txHash = await module.exports.getTxHash(tx);
     await console.log('Created deployment transaction ' + txHash);
     return txHash;
@@ -56,23 +56,42 @@ module.exports = {
 
   instantiateContract: async function(_addr, _abi, _wallet){
     var contractInstance = await new ethers.Contract(_addr, _abi, _wallet);
-    var tokenContract = new Promise(resolve => {resolve(contractInstance);});
+    var depositContract = new Promise(resolve => {resolve(contractInstance);});
     await console.log("Contract instantiated");
-    return tokenContract;
+    return depositContract;
   },
 
   //--------------------------------------------------------------------------------
   //Interacting with DepositContract instance
+
+  setTokenContractCall: async function(_addr, _contractInstance){
+    var result = await _contractInstance.setTokenContract(_addr);
+    var txHash = await module.exports.getTxHash(result);
+    await console.log('TokenContract set to contract at address ' + _addr +
+                      ' in transaction ' + txHash);
+    return txHash;
+  },
+
+  setCustodianForeignCall: async function(_addr, _contractInstance){
+    var result = await _contractInstance.setCustodianForeign(_addr);
+    var txHash = await module.exports.getTxHash(result);
+    await console.log('TokenContract custodian set to address ' + _addr +
+                      ' in transaction ' + txHash);
+    return txHash;
+  },
+
+  finalizeStakeCall: async function(_contractInstance){
+    var result = await _contractInstance.finalizeStake();
+    var txHash = await module.exports.getTxHash(result);
+    await console.log('Stake finalized at transaction: ' + txHash);
+    return txHash;
+  },
 
   depositCall: async function(_amt, _mintHash, _minter, _contractInstance) {
     var result = await _contractInstance.deposit.value(_amt)(_mintHash, _minter);
     var txHash = await module.exports.getTxHash(result);
     await console.log('deposit() txHash: ' + txHash);
     return txHash;
-  },
-
-  ownerOfCall: async function(_tokenId, _contractInstance) {
-    var result = await _contractInstance.ownerOf(_tokenId);
-    console.log(result+ " is owner of tokenId " + _tokenId);
   }
+
 }

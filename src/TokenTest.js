@@ -7,7 +7,7 @@ functions interacting with the contract
 //------------------------------------------------------------------------------
 //Set parameters
 var network = 'rinkeby'; //'rinkeby', 'ropsten', 'kovan', 'homestead'
-var blockTimeDelay = 40000;
+var blockTimeDelay = 50000;
 var infuraAPI = '9744d40b99e34a57850802d4c6433ab8';
 var privateKey = '0x13410a539b4fdb8dabde37ff8d687cc' +
                  '23eea64ab11eaf348a2fd775ba71a31cc';

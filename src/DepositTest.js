@@ -6,8 +6,8 @@ functions interacting with the contract
 
 //------------------------------------------------------------------------------
 //Set parameters
-var network = 'ropsten'; //'rinkeby', 'ropsten', 'kovan', 'homestead'
-var blockTimeDelay = 40000;
+var network = 'kovan'; //'rinkeby', 'ropsten', 'kovan', 'homestead'
+var blockTimeDelay = 55000;
 var infuraAPI = '9744d40b99e34a57850802d4c6433ab8';
 var privateKey = '0x13410a539b4fdb8dabde37ff8d687cc' +
                  '23eea64ab11eaf348a2fd775ba71a31cc';
@@ -53,36 +53,36 @@ const abi = JSON.parse(output.contracts['DepositContract_flat.sol:DepositContrac
 
 //------------------------------------------------------------------------------
 //Specify TokenContract parameters
-var tokenContractAddress = '0xEdD915279BeA923815D89cE5edDDca3fcC4167e0';
+var tokenContractAddr = '0xEdD915279BeA923815D89cE5edDDca3fcC4167e0';
 var tokenIdDec = 16118818340691892296820170890762028606357708147991905105415102369943739718021
 var tokenIdHex = '0x23a2ed894fa2aa535bd368dac20708426157125cf901ad4d16ca2d9f90045985'
 
 //------------------------------------------------------------------------------
 //Write tests
 async function testFunctions(_contractInstance){
- var txHash = await mintCall(10000, publicAddress, _contractInstance);
- setTimeout(async function() {
-   var tokenId = await getTokenId(txHash);
-   setTimeout(async function() {
-     var tokenId = await getTokenId(txHash);
-     setTimeout(async function() {
-       transferCall(publicAddress, publicAddress2, tokenId, 0, _contractInstance);
-     }, blockTimeDelay)
-   }, blockTimeDelay)
- }, blockTimeDelay)
+  var setTokenContractTxHash = await depositTestHelper.setTokenContractCall(tokenContractAddr, _contractInstance);
+  var setCustodianForeignTxHash = await depositTestHelper.setCustodianForeignCall(publicAddress, _contractInstance);
+  setTimeout(async function() {
+    tokenId = await depositTestHelper.finalizeStakeCall(_contractInstance);
+  }, blockTimeDelay)
 }
 
 async function deployContractAndTest(_testFunctions){
-  var txHash = await depositTestHelper.deployContract(bytecode, abi, publicAddress, wallet);
+  var txHash = await depositTestHelper.deployContract(bytecode,
+                                                      abi,
+                                                      publicAddress,
+                                                      wallet);
   setTimeout(async function() {
     var contractAddr = await depositTestHelper.getAddr(txHash, provider);
-    var tokenContract = await depositTestHelper.instantiateContract(contractAddr, abi, wallet);
-    var tokenContract2 = await depositTestHelper.instantiateContract(contractAddr, abi, wallet2);
-    _testFunctions(tokenContract, tokenContract2)
+    var depositContract = await depositTestHelper.instantiateContract(contractAddr, abi, wallet);
+    _testFunctions(depositContract);
   }, blockTimeDelay);
 }
 
-
 //Deploy tests
-// deployContractAndTest(testFunctions);
-depositTestHelper.deployContract(bytecode, abi, publicAddress, wallet)
+
+deployContractAndTest(testFunctions);
+// depositTestHelper.deployContract(bytecode, abi, publicAddress, wallet, 1000000000)
+// depositContract = new ethers.Contract('0x6CD6426010AD55B9DF621887A1948e11522933b1', abi, wallet)
+// depositContract.finalizeStake().then(function(value){console.log(value)});
+// depositContract.setTokenContract('0xEdD915279BeA923815D89cE5edDDca3fcC4167e0').then(function(value){console.log(value)});
