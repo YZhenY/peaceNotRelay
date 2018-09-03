@@ -14,7 +14,7 @@ var foreignPrivateKey = '0x2b847e2e99d7600ab0fbae23643a6a81d009aaf0573e887b41079
 var foreignPublicAddr = '0x9677044a39550cEbB01fa79bEC04Cf54E162d0C3';
 var foreignPrivateKey2 = '0x546a0806a2d0240d50797f7f7b0120a6af0d6e8bfa5b4620365f5e8af9eb6fe7';
 var foreignPublicAddr2 = '0x942BbcCde96bEc073e1DCfc50bc661c21a674d63';
-var foreignBlockTimeDelay = 50000;
+var foreignBlockTimeDelay = 55000;
 
 var homeNetwork = 'kovan'; //'rinkeby', 'ropsten', 'kovan', 'homestead'
 var homeCustPrivateKey = '0x13410a539b4fdb8dabde37ff8d687cc23eea64ab11eaf348a2fd775ba71a31cc';
@@ -24,7 +24,7 @@ var homePublicAddr = '0x9677044a39550cEbB01fa79bEC04Cf54E162d0C3';
 var homeBlockTimeDelay = 55000;
 
 var tokenContractAddr = '0x352246304ff47F2458775Cd9a4989f02E50f2Ec6';
-var depositContractAddr = '0x8882557047861D0b4aDAEa97F40fA911F4f1E3F7';
+var depositContractAddr = '0x93DBC7AFAbF7bd1E3c726D69215e319b5F61a3aA';
 
 //------------------------------------------------------------------------------
 //Require dependencies
@@ -77,14 +77,14 @@ async function userTest(_custTokenContractInstance,
                         _tokenContractInstance,
                         _tokenContractInstance2,
                         _depositContractInstance){
-  //1. mint on TokenContract
+  //1. Alice mints on TokenContract
   var tokenId;
   var transferTxHash;
   var nonce;
   var mintTxHash = await tokenHelper.mintCall(10000,
                                               foreignPublicAddr,
                                               _tokenContractInstance);
-  //2. deposit on DepositContract
+  //2. Alice deposits on DepositContract
   setTimeout(async function() {
     tokenId = await tokenHelper.getTokenIdFromMint(mintTxHash, foreignProvider);
     var depositTxHash = await depositHelper.depositCall(10000,
@@ -93,6 +93,7 @@ async function userTest(_custTokenContractInstance,
                                                         _depositContractInstance);
   }, foreignBlockTimeDelay)
 
+  //3. Alice makes a transfer to Bob on TokenContract
   setTimeout(async function() {
     transferTxHash = await tokenHelper.transferCall(foreignPublicAddr,
                                                         foreignPublicAddr2,
@@ -101,13 +102,16 @@ async function userTest(_custTokenContractInstance,
                                                         _tokenContractInstance);
   }, foreignBlockTimeDelay + homeBlockTimeDelay)
 
+  //4. Custodian approves transfer on TokenContract
   setTimeout(async function() {
     nonce = await tokenHelper.getNonceFromTransferRequest(transferTxHash, foreignProvider);
   }, foreignBlockTimeDelay*2 + homeBlockTimeDelay)
 
   setTimeout(async function() {
-    await tokenHelper.custodianApproveCall(tokenId, nonce, _tokenContractInstance);
+    await tokenHelper.custodianApproveCall(tokenId, nonce, _custTokenContractInstance);
   }, foreignBlockTimeDelay*3 + homeBlockTimeDelay)
+
+  //5. Bob withdraws from DepositContract
 
 }
 

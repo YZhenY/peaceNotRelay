@@ -101,6 +101,17 @@ module.exports = {
     var txHash = await module.exports.getTxHash(result);
     await console.log('deposit() txHash: ' + txHash);
     return txHash;
+  },
+
+  withdrawCall: async function(_to, _tokenId, _rawTxBundle,
+                               _txLengths, _txMsgHashes,
+                               _declaredNonce, _contractInstance){
+     var result = await _contractInstance.withdraw(_to, _tokenId, _rawTxBundle,
+                                                   _txLengths, _txMsgHashes,
+                                                   _declaredNonce);
+     var txHash = await module.exports.getTxHash(result);
+     await console.log('withdraw() txHash: ' + txHash);
+     return txHash;
   }
 
 }

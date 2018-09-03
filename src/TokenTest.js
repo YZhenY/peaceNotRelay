@@ -79,7 +79,7 @@ async function testFunctions(_contractInstance, _contractInstance2){
     transferTxHash2 = await tokenHelper.transferCall(publicAddress2,
                                                          publicAddress3,
                                                          tokenId,
-                                                         1,
+                                                         nonce + 1,
                                                          _contractInstance2);
   }, blockTimeDelay*5)
   setTimeout(async function() {
