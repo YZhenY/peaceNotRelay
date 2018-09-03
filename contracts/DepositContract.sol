@@ -42,21 +42,18 @@ contract DepositContract {
   }
 
   modifier onlyCustodian() {
-    if (custodian == msg.sender) {
-      _;
-    }
+    require(custodian == msg.sender);
+    _;
   }
 
   modifier statePreStaked () {
-    if (keccak256(contractState) == keccak256("preStaked"))  {
-      _;
-    }
+    require(keccak256(contractState) == keccak256("preStaked"));
+    _;
   }
 
   modifier stateStaked () {
-    if (keccak256(contractState) == keccak256("staked"))  {
-      _;
-    }
+    require(keccak256(contractState) == keccak256("staked"));
+    _;
   }
 
   event Deposit(address indexed depositer,

@@ -1,56 +1,7 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.8;
 // produced by the Solididy File Flattener (c) David Appleton 2018
 // contact : dave@akomba.com
 // released under Apache 2.0 licence
-library AddressUtils {
-
-  /**
-   * Returns whether the target address is a contract
-   * @dev This function will return false if invoked during the constructor of a contract,
-   * as the code is not actually created until after the constructor finishes.
-   * @param _addr address to check
-   * @return whether the target address is a contract
-   */
-  function isContract(address _addr) internal view returns (bool) {
-    uint256 size;
-    // XXX Currently there is no better way to check if there is a contract in an address
-    // than to check the size of the code at that address.
-    // See https://ethereum.stackexchange.com/a/14016/36603
-    // for more details about how this works.
-    // TODO Check this again before the Serenity release, because all addresses will be
-    // contracts then.
-    // solium-disable-next-line security/no-inline-assembly
-    assembly { size := extcodesize(_addr) }
-    return size > 0;
-  }
-
-}
-library SafeMath {
-  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
-    uint256 c = a * b;
-    assert(a == 0 || c / a == b);
-    return c;
-  }
-
-  function div(uint256 a, uint256 b) internal pure returns (uint256) {
-    // assert(b > 0); // Solidity automatically throws when dividing by 0
-    uint256 c = a / b;
-    // assert(a == b * c + a % b); // There is no case in which this doesn't hold
-    return c;
-  }
-
-  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-    assert(b <= a);
-    return a - b;
-  }
-  
-  function add(uint256 a, uint256 b) internal pure returns (uint256) {
-    uint256 c = a + b;
-    assert(c >= a);
-    return c;
-  }
-}
-
 contract Ownable {
   address public owner;
 
@@ -906,6 +857,55 @@ contract ERC721Basic {
 
   function transferFrom(address _from, address _to, uint256 _tokenId, uint256 _declaredNonce) public;
 }
+library AddressUtils {
+
+  /**
+   * Returns whether the target address is a contract
+   * @dev This function will return false if invoked during the constructor of a contract,
+   * as the code is not actually created until after the constructor finishes.
+   * @param _addr address to check
+   * @return whether the target address is a contract
+   */
+  function isContract(address _addr) internal view returns (bool) {
+    uint256 size;
+    // XXX Currently there is no better way to check if there is a contract in an address
+    // than to check the size of the code at that address.
+    // See https://ethereum.stackexchange.com/a/14016/36603
+    // for more details about how this works.
+    // TODO Check this again before the Serenity release, because all addresses will be
+    // contracts then.
+    // solium-disable-next-line security/no-inline-assembly
+    assembly { size := extcodesize(_addr) }
+    return size > 0;
+  }
+
+}
+library SafeMath {
+  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+    uint256 c = a * b;
+    assert(a == 0 || c / a == b);
+    return c;
+  }
+
+  function div(uint256 a, uint256 b) internal pure returns (uint256) {
+    // assert(b > 0); // Solidity automatically throws when dividing by 0
+    uint256 c = a / b;
+    // assert(a == b * c + a % b); // There is no case in which this doesn't hold
+    return c;
+  }
+
+  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+    assert(b <= a);
+    return a - b;
+  }
+  
+  function add(uint256 a, uint256 b) internal pure returns (uint256) {
+    uint256 c = a + b;
+    assert(c >= a);
+    return c;
+  }
+}
+
 contract ERC721BasicToken is ERC721Basic {
 
   using SafeMath for uint256;
@@ -1130,12 +1130,9 @@ contract TokenContract is ERC721BasicToken {
   using RLP for bytes;
   using BytesLib for bytes;
 
-  string contractState = "preStaked";
   address depositContract;
   address custodian;
   address custodianHome;
-  uint256 stakedAmount;
-  uint256 mintCap;
   uint256 mintedAmount;
   uint256 public mintNonce = 0;
   mapping (uint256 => uint256) public transferNonce;
@@ -1146,23 +1143,10 @@ contract TokenContract is ERC721BasicToken {
   }
 
   modifier onlyCustodian() {
-    if (custodian == msg.sender) {
-      _;
-    }
+    require(custodian == msg.sender);
+    _;
   }
-
-  modifier statePreStaked () {
-    if (keccak256(contractState) == keccak256("preStaked"))  {
-      _;
-    }
-  }
-
-  modifier stateStaked () {
-    if (keccak256(contractState) == keccak256("staked"))  {
-      _;
-    }
-  }
-
+  
   event Mint(uint256 amount,
              address indexed depositedTo,
              uint256 mintNonce,
@@ -1174,15 +1158,8 @@ contract TokenContract is ERC721BasicToken {
                         uint256 declaredNonce,
                         bytes32 approvalHash);
 
-  function setDepositContract(address _depositContract)
-  onlyCustodian statePreStaked public {
+  function setDepositContract(address _depositContract) onlyCustodian public {
     depositContract = _depositContract;
-  }
-
-  function finalizeStake() onlyCustodian statePreStaked public {
-    stakedAmount = address(this).balance;
-    mintCap = address(this).balance.div(2);
-    contractState = "staked";
   }
 
   function mint(uint256 _value, address _to) public {

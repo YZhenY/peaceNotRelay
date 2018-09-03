@@ -40,7 +40,7 @@ module.exports = {
   instantiateContract: async function(_addr, _abi, _wallet){
     var contractInstance = await new ethers.Contract(_addr, _abi, _wallet);
     var tokenContract = new Promise(resolve => {resolve(contractInstance);});
-    await console.log("Contract instantiated");
+    await console.log("TokenContract instantiated");
     return tokenContract;
   },
 
@@ -63,7 +63,7 @@ module.exports = {
   //------------------------------------------------------------------------------
   //Interacting with TokenContract instance
 
-  mintCall: async function(_amt, _publicAddress, _contractInstance) {
+  mintCall: async function(_amt, _publicAddress, _contractInstance) {  
       var result = await _contractInstance.mint(_amt, _publicAddress);
       var txHash = await module.exports.getTxHash(result);
       await console.log('mint() txHash: ' + txHash);

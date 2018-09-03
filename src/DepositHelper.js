@@ -55,7 +55,7 @@ module.exports = {
   instantiateContract: async function(_addr, _abi, _wallet){
     var contractInstance = await new ethers.Contract(_addr, _abi, _wallet);
     var depositContract = new Promise(resolve => {resolve(contractInstance);});
-    await console.log("Contract instantiated");
+    await console.log("DepositContract instantiated");
     return depositContract;
   },
 
@@ -96,8 +96,8 @@ module.exports = {
     return txHash;
   },
 
-  depositCall: async function(_amt, _mintHash, _minter, _contractInstance) {
-    var result = await _contractInstance.deposit.value(_amt)(_mintHash, _minter);
+  depositCall: async function(_amt, _tokenId, _minter, _contractInstance) {
+    var result = await _contractInstance.deposit(_tokenId, _minter, {value: _amt});
     var txHash = await module.exports.getTxHash(result);
     await console.log('deposit() txHash: ' + txHash);
     return txHash;

@@ -29,11 +29,10 @@ contract TokenContract is ERC721BasicToken {
   }
 
   modifier onlyCustodian() {
-    if (custodian == msg.sender) {
-      _;
-    }
+    require(custodian == msg.sender);
+    _;
   }
-
+  
   event Mint(uint256 amount,
              address indexed depositedTo,
              uint256 mintNonce,

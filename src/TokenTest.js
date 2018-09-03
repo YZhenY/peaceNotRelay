@@ -27,7 +27,7 @@ var fs = require('fs');
 var solc = require('solc');
 var provider = new ethers.providers.InfuraProvider(network = network,
                                                    apiAccessToken = infuraAPI);
-const tokenTestHelper = require('./TokenTestHelper.js');
+const tokenHelper = require('./TokenHelper.js');
 
 //------------------------------------------------------------------------------
 //Set wallets
@@ -53,57 +53,55 @@ const abi = JSON.parse(output.contracts['TokenContract_flat.sol:TokenContract'].
 //------------------------------------------------------------------------------
 //Write tests
 async function testFunctions(_contractInstance, _contractInstance2){
-  var mintTxHash = await tokenTestHelper.mintCall(10000,
-                                                  publicAddress,
-                                                  _contractInstance);
+  var mintTxHash = await tokenHelper.mintCall(10000, publicAddress, _contractInstance);
   var tokenId;
   var transferTxHash;
   var nonce;
   setTimeout(async function() {
-    tokenId = await tokenTestHelper.getTokenIdFromMint(mintTxHash, provider);
+    tokenId = await tokenHelper.getTokenIdFromMint(mintTxHash, provider);
   }, blockTimeDelay)
   setTimeout(async function() {
-    await tokenTestHelper.ownerOfCall(tokenId, _contractInstance);
-    transferTxHash = await tokenTestHelper.transferCall(publicAddress,
+    await tokenHelper.ownerOfCall(tokenId, _contractInstance);
+    transferTxHash = await tokenHelper.transferCall(publicAddress,
                                                         publicAddress2,
                                                         tokenId,
                                                         0,
                                                         _contractInstance);
   }, blockTimeDelay*2)
   setTimeout(async function() {
-    nonce = await tokenTestHelper.getNonceFromTransferRequest(transferTxHash, provider);
+    nonce = await tokenHelper.getNonceFromTransferRequest(transferTxHash, provider);
   }, blockTimeDelay*3)
   setTimeout(async function() {
-    await tokenTestHelper.custodianApproveCall(tokenId, nonce, _contractInstance);
+    await tokenHelper.custodianApproveCall(tokenId, nonce, _contractInstance);
   }, blockTimeDelay*4)
   setTimeout(async function() {
-    await tokenTestHelper.ownerOfCall(tokenId, _contractInstance);
-    transferTxHash2 = await tokenTestHelper.transferCall(publicAddress2,
+    await tokenHelper.ownerOfCall(tokenId, _contractInstance);
+    transferTxHash2 = await tokenHelper.transferCall(publicAddress2,
                                                          publicAddress3,
                                                          tokenId,
                                                          1,
                                                          _contractInstance2);
   }, blockTimeDelay*5)
   setTimeout(async function() {
-    await tokenTestHelper.ownerOfCall(tokenId, _contractInstance);
-    nonce2 = await tokenTestHelper.getNonceFromTransferRequest(transferTxHash2, provider);
+    await tokenHelper.ownerOfCall(tokenId, _contractInstance);
+    nonce2 = await tokenHelper.getNonceFromTransferRequest(transferTxHash2, provider);
   }, blockTimeDelay*6)
   setTimeout(async function() {
-    await tokenTestHelper.custodianApproveCall(tokenId, nonce2, _contractInstance);
+    await tokenHelper.custodianApproveCall(tokenId, nonce2, _contractInstance);
   }, blockTimeDelay*7)
   setTimeout(async function() {
-    await tokenTestHelper.ownerOfCall(tokenId, _contractInstance);
+    await tokenHelper.ownerOfCall(tokenId, _contractInstance);
   }, blockTimeDelay*8)
 }
 
 async function deployContractAndTest(_testFunctions){
-  var txHash = await tokenTestHelper.deployContract(bytecode, abi, publicAddress, wallet);
-  setTimeout(async function() {
-    var contractAddr = await tokenTestHelper.getAddr(txHash, provider);
-    var tokenContract = await tokenTestHelper.instantiateContract(contractAddr, abi, wallet);
-    var tokenContract2 = await tokenTestHelper.instantiateContract(contractAddr, abi, wallet2);
-    _testFunctions(tokenContract, tokenContract2)
-  }, blockTimeDelay);
+  var txHash = await tokenHelper.deployContract(bytecode, abi, publicAddress, wallet);
+  // setTimeout(async function() {
+  //   var contractAddr = await tokenHelper.getAddr(txHash, provider);
+  //   var tokenContract = await tokenHelper.instantiateContract(contractAddr, abi, wallet);
+  //   var tokenContract2 = await tokenHelper.instantiateContract(contractAddr, abi, wallet2);
+  //   _testFunctions(tokenContract, tokenContract2)
+  // }, blockTimeDelay);
 }
 
 //Deploy tests

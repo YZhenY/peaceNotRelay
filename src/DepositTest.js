@@ -27,8 +27,7 @@ var fs = require('fs');
 var solc = require('solc');
 var provider = new ethers.providers.InfuraProvider(network = network,
                                                    apiAccessToken = infuraAPI);
-const depositTestHelper = require('./DepositTestHelper.js');
-const tokenTestHelper = require('./TokenTestHelper.js');
+const depositHelper = require('./DepositHelper.js');
 
 //------------------------------------------------------------------------------
 //Set wallets
@@ -50,36 +49,35 @@ const bytecode = output.contracts['DepositContract_flat.sol:DepositContract'].
                  bytecode;
 const abi = JSON.parse(output.contracts['DepositContract_flat.sol:DepositContract'].
                        interface);
-
 //------------------------------------------------------------------------------
 //Specify TokenContract parameters
-var tokenContractAddr = '0xEdD915279BeA923815D89cE5edDDca3fcC4167e0';
+var tokenContractAddr = '0x352246304ff47F2458775Cd9a4989f02E50f2Ec6';
 var tokenIdDec = 16118818340691892296820170890762028606357708147991905105415102369943739718021
 var tokenIdHex = '0x23a2ed894fa2aa535bd368dac20708426157125cf901ad4d16ca2d9f90045985'
 
 //------------------------------------------------------------------------------
 //Write tests
 async function testFunctions(_contractInstance, _contractAddr){
-  var setTokenContractTxHash = await depositTestHelper.setTokenContractCall(tokenContractAddr, _contractInstance);
+  var setTokenContractTxHash = await depositHelper.setTokenContractCall(tokenContractAddr, _contractInstance);
   setTimeout(async function() {
-    var setCustodianForeignTxHash = await depositTestHelper.setCustodianForeignCall(publicAddress, _contractInstance);
+    var setCustodianForeignTxHash = await depositHelper.setCustodianForeignCall(publicAddress, _contractInstance);
   }, blockTimeDelay)
   setTimeout(async function() {
-    var stakeTxHash = await depositTestHelper.stakeCall(_contractAddr, "0.5", wallet);
+    var stakeTxHash = await depositHelper.stakeCall(_contractAddr, "0.1", wallet);
   }, blockTimeDelay*2)
   setTimeout(async function() {
-    tokenId = await depositTestHelper.finalizeStakeCall(_contractInstance);
+    tokenId = await depositHelper.finalizeStakeCall(_contractInstance);
   }, blockTimeDelay*3)
 }
 
 async function deployContractAndTest(_testFunctions){
-  var txHash = await depositTestHelper.deployContract(bytecode,
+  var txHash = await depositHelper.deployContract(bytecode,
                                                       abi,
                                                       publicAddress,
                                                       wallet);
   setTimeout(async function() {
-    var contractAddr = await depositTestHelper.getAddr(txHash, provider);
-    var depositContract = await depositTestHelper.instantiateContract(contractAddr, abi, wallet);
+    var contractAddr = await depositHelper.getAddr(txHash, provider);
+    var depositContract = await depositHelper.instantiateContract(contractAddr, abi, wallet);
     _testFunctions(depositContract, contractAddr);
   }, blockTimeDelay);
 }
@@ -87,7 +85,3 @@ async function deployContractAndTest(_testFunctions){
 //Deploy tests
 
 deployContractAndTest(testFunctions);
-// depositTestHelper.deployContract(bytecode, abi, publicAddress, wallet, 1000000000)
-// depositContract = new ethers.Contract('0x6CD6426010AD55B9DF621887A1948e11522933b1', abi, wallet)
-// depositContract.finalizeStake().then(function(value){console.log(value)});
-// depositContract.setTokenContract('0xEdD915279BeA923815D89cE5edDDca3fcC4167e0').then(function(value){console.log(value)});
