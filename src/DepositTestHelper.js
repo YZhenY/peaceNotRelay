@@ -5,7 +5,7 @@ This script provides helper functions for testing DepositContract.sol
 
 //------------------------------------------------------------------------------
 //Set parameters
-var network = 'ropsten';
+var network = 'kovan';
 var infuraAPI = '9744d40b99e34a57850802d4c6433ab8';
 var privateKey = '0x13410a539b4fdb8dabde37ff8d687cc' +
                  '23eea64ab11eaf348a2fd775ba71a31cc';
@@ -44,9 +44,7 @@ module.exports = {
   },
 
   deployContract: async function(_bytecode, _abi, _publicAddress, _wallet){
-    var deployTransaction = ethers.Contract.getDeployTransaction("0x"+_bytecode,
-                                                                 _abi,
-                                                                 _publicAddress);
+    var deployTransaction = ethers.Contract.getDeployTransaction("0x"+_bytecode, _abi, _publicAddress);
     deployTransaction.gasLimit = 3500000;
     var tx = await _wallet.sendTransaction(deployTransaction);
     var txHash = await module.exports.getTxHash(tx);
@@ -59,6 +57,17 @@ module.exports = {
     var depositContract = new Promise(resolve => {resolve(contractInstance);});
     await console.log("Contract instantiated");
     return depositContract;
+  },
+
+  stakeCall: async function(_addr, _etherString, _wallet){
+    var transaction = {
+      to: _addr,
+      value: ethers.utils.parseEther(_etherString)
+    };
+    var tx = await _wallet.sendTransaction(transaction);
+    var txHash = await module.exports.getTxHash(tx);
+    await console.log('Sent ' + _etherString + ' to ' + _addr + ' at tx ' + txHash);
+    return txHash;
   },
 
   //--------------------------------------------------------------------------------

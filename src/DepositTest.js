@@ -59,12 +59,17 @@ var tokenIdHex = '0x23a2ed894fa2aa535bd368dac20708426157125cf901ad4d16ca2d9f9004
 
 //------------------------------------------------------------------------------
 //Write tests
-async function testFunctions(_contractInstance){
+async function testFunctions(_contractInstance, _contractAddr){
   var setTokenContractTxHash = await depositTestHelper.setTokenContractCall(tokenContractAddr, _contractInstance);
-  var setCustodianForeignTxHash = await depositTestHelper.setCustodianForeignCall(publicAddress, _contractInstance);
+  setTimeout(async function() {
+    var setCustodianForeignTxHash = await depositTestHelper.setCustodianForeignCall(publicAddress, _contractInstance);
+  }, blockTimeDelay)
+  setTimeout(async function() {
+    var stakeTxHash = await depositTestHelper.stakeCall(_contractAddr, "0.5", wallet);
+  }, blockTimeDelay*2)
   setTimeout(async function() {
     tokenId = await depositTestHelper.finalizeStakeCall(_contractInstance);
-  }, blockTimeDelay)
+  }, blockTimeDelay*3)
 }
 
 async function deployContractAndTest(_testFunctions){
@@ -75,7 +80,7 @@ async function deployContractAndTest(_testFunctions){
   setTimeout(async function() {
     var contractAddr = await depositTestHelper.getAddr(txHash, provider);
     var depositContract = await depositTestHelper.instantiateContract(contractAddr, abi, wallet);
-    _testFunctions(depositContract);
+    _testFunctions(depositContract, contractAddr);
   }, blockTimeDelay);
 }
 

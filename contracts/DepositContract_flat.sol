@@ -2,6 +2,32 @@ pragma solidity ^0.4.24;
 // produced by the Solididy File Flattener (c) David Appleton 2018
 // contact : dave@akomba.com
 // released under Apache 2.0 licence
+library SafeMath {
+  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+    uint256 c = a * b;
+    assert(a == 0 || c / a == b);
+    return c;
+  }
+
+  function div(uint256 a, uint256 b) internal pure returns (uint256) {
+    // assert(b > 0); // Solidity automatically throws when dividing by 0
+    uint256 c = a / b;
+    // assert(a == b * c + a % b); // There is no case in which this doesn't hold
+    return c;
+  }
+
+  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+    assert(b <= a);
+    return a - b;
+  }
+
+  function add(uint256 a, uint256 b) internal pure returns (uint256) {
+    uint256 c = a + b;
+    assert(c >= a);
+    return c;
+  }
+}
+
 contract Ownable {
   address public owner;
 
@@ -489,7 +515,7 @@ library BytesLib {
             // Update the free-memory pointer by padding our last write location
             // to 32 bytes: add 31 bytes to the end of tempBytes to move to the
             // next 32 byte block, then round down to the nearest multiple of
-            // 32. If the sum of the length of the two arrays is zero then add 
+            // 32. If the sum of the length of the two arrays is zero then add
             // one before rounding down to leave a blank 32 bytes (the length block with 0).
             mstore(0x40, and(
               add(add(end, iszero(add(length, mload(_preBytes)))), 31),
@@ -619,8 +645,8 @@ library BytesLib {
                 let mask := sub(exp(0x100, submod), 1)
 
                 sstore(sc, add(sload(sc), and(mload(mc), mask)))
-                
-                for { 
+
+                for {
                     sc := add(sc, 1)
                     mc := add(mc, 0x20)
                 } lt(mc, end) {
@@ -824,32 +850,6 @@ library BytesLib {
         return success;
     }
 }
-library SafeMath {
-  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
-    uint256 c = a * b;
-    assert(a == 0 || c / a == b);
-    return c;
-  }
-
-  function div(uint256 a, uint256 b) internal pure returns (uint256) {
-    // assert(b > 0); // Solidity automatically throws when dividing by 0
-    uint256 c = a / b;
-    // assert(a == b * c + a % b); // There is no case in which this doesn't hold
-    return c;
-  }
-
-  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-    assert(b <= a);
-    return a - b;
-  }
-  
-  function add(uint256 a, uint256 b) internal pure returns (uint256) {
-    uint256 c = a + b;
-    assert(c >= a);
-    return c;
-  }
-}
-
 contract DepositContract {
   using SafeMath for uint256;
   using RLP for RLP.RLPItem;
@@ -880,6 +880,8 @@ contract DepositContract {
     address from;
   }
 
+  function () payable {}
+
   constructor (address _custodian) {
     custodian = _custodian;
   }
@@ -902,27 +904,40 @@ contract DepositContract {
     }
   }
 
-  event Deposit(address indexed depositer, uint256 amount, uint256 tokenId, address minter);
-  event Challenge(address indexed depositer, address indexed depositedTo, uint256 amount, uint256 indexed blockNumber);
+  event Deposit(address indexed depositer,
+                uint256 amount,
+                uint256 tokenId,
+                address minter);
+  event ChallengeInitiated(address indexed challenger,
+                           address indexed depositedTo,
+                           uint256 tokenId);
+  event Challenge(address indexed rechallenger,
+                  address indexed depositedTo,
+                  uint256 tokenId,
+                  uint256 finalChallengeNonce);
   event ChallengeResolved(uint256 tokenId);
-  event Withdrawal(address indexed withdrawer, uint256 indexed tokenId, uint256 stakedAmount);
+  event Withdrawal(address indexed withdrawer,
+                   uint256 indexed tokenId,
+                   uint256 stakedAmount);
 
-  bytes4 mintSignature = 0xe32e7aff;
+  bytes4 mintSignature = 0x94bf804d;
   bytes4 withdrawSignature = 0x2e1a7d4d;
   bytes4 transferFromSignature = 0xfe99049a;
   bytes4 custodianApproveSignature = 0x6e3c045e;
   uint256 gasPerChallenge = 206250;
 
-  function setTokenContract(address _tokenContract) onlyCustodian statePreStaked public {
+  function setTokenContract(address _tokenContract) onlyCustodian statePreStaked
+  public {
     tokenContract = _tokenContract;
   }
 
 
-  function setCustodianForeign(address _custodianForeign) onlyCustodian statePreStaked public {
+  function setCustodianForeign(address _custodianForeign) onlyCustodian
+  statePreStaked public {
     custodianForeign = _custodianForeign;
   }
 
-  function finalizeStake () onlyCustodian statePreStaked public {
+  function finalizeStake() onlyCustodian statePreStaked public {
     stakedAmount = address(this).balance;
     depositCap = address(this).balance;
     depositedAmount = 0;
@@ -1023,7 +1038,8 @@ contract DepositContract {
             "the challenge period has not started yet");
     require(challengeTime[_tokenId] < now,
             "the challenge period has not ended yet");
-    require(challengeNonce[_tokenId] == challengeEndNonce[_tokenId] ||
+    //challengeNonce represents the requirement for the next tx (thus the +1)
+    require(challengeNonce[_tokenId] == challengeEndNonce[_tokenId] + 1 ||
                                         challengeNonce[_tokenId] == 0,
             "either a challenge has started, or the challenge response has not been proven to endNonce");
     challengeRecipient[_tokenId].send((tokenIdToAmount[_tokenId] ) +
@@ -1034,7 +1050,8 @@ contract DepositContract {
 
   /*
   /**
-   * @dev For challenger to claim stake on fradulent challenge (challengeWithPastCustody())
+   * @dev For challenger to claim stake on fradulent challenge
+     (challengeWithPastCustody())
    * @param _tokenId uint256 Id of token on TokenContract
   */
   function claimStake(uint256 _tokenId) public {
@@ -1050,13 +1067,13 @@ contract DepositContract {
   }
   /*
   /**
-   * @dev Challenges with future custody using a transaction proving transfer of token
+   * @dev Challenges with future custody using a transaction proving transfer
    * once future custody is proven, it ends pays the challenger
    * @param _to address to send stake given success
    * @param _tokenId uint256 Id of token on TokenContract
    * @param _rawTxBundle bytes32[] bundle that takes in concatenation of
      bytes _transactionTx, bytes _custodianTx
-   * @param _txLengths lengths of transactions in rawTxBundle, used for efficiency purposes
+   * @param _txLengths lengths of transactions in rawTxBundle, for efficiency
    * @param _txMsgHashes msghashes of transactions in bundle
   */
   function challengeWithFutureCustody(address _to,
@@ -1096,8 +1113,9 @@ contract DepositContract {
    // TODO: extend challenge period when called
    * @param _to address to send stake given success
    * @param _tokenId uint256 Id of token on TokenContract
-   * @param _rawTxBundle bytes32[] bundle that takes in concatination of bytes _transactionTx, bytes _custodianTx
-   * @param _txLengths lengths of transactions in rawTxBundle, used for efficiency purposes
+   * @param _rawTxBundle bytes32[] bundle that takes in concatenation of
+      bytes _transactionTx, bytes _custodianTx
+   * @param _txLengths lengths of transactions in rawTxBundle, for efficiency
    * @param _txMsgHashes msghashes of transactions in bundle
   */
   function initiateChallengeWithPastCustody(address _to,
@@ -1122,14 +1140,16 @@ contract DepositContract {
     //TODO: save on require statement by not including _tokenId in arguments
     require(_tokenId == parseData(transferTx[5].toData(), 3).toUint(0),
             "needs to refer to the same tokenId");
-    require(tokenIdToMinter[_tokenId] == parseData(transferTx[5].toData(), 1).toAddress(12),
+    require(tokenIdToMinter[_tokenId] == parseData(transferTx[5].toData(), 1).
+            toAddress(12),
             "token needs to be transfered from last proven custody");
     //moves up root mint referecce to recipient address
-    tokenIdToMinter[_tokenId] = parseData(transferTx[5].toData(), 2).toAddress(12);
-
+    tokenIdToMinter[_tokenId] = parseData(transferTx[5].toData(), 2).
+                                toAddress(12);
     challengeStake[_tokenId] += msg.value;
     challenger[_tokenId] = _to;
     challengeNonce[_tokenId] = 1;
+    emit ChallengeInitiated(msg.sender, _to, _tokenId);
   }
 
   /*
@@ -1139,8 +1159,9 @@ contract DepositContract {
    // TODO: remove loops (less efficient then single calls)
    * @param _to address to send stake given success
    * @param _tokenId uint256 Id of token on TokenContract
-   * @param _rawTxBundle bytes32[] bundle that takes in concatination of bytes _transactionTx, bytes _custodianTx
-   * @param _txLengths lengths of transactions in rawTxBundle, used for efficiency purposes
+   * @param _rawTxBundle bytes32[] bundle that takes in concatenation of
+     bytes _transactionTx, bytes _custodianTx
+   * @param _txLengths lengths of transactions in rawTxBundle, for efficiency
    * @param _txMsgHashes msghashes of transactions in bundle
   */
   // TODO: rename challegne
@@ -1166,25 +1187,32 @@ contract DepositContract {
       //TODO: save on require statement by not including _tokenId in arguments
       require(_tokenId == parseData(transferTx[5].toData(), 3).toUint(0),
               "needs to refer to the same tokenId");
-      require(tokenIdToMinter[_tokenId] == parseData(transferTx[5].toData(), 1).toAddress(12),
+      require(tokenIdToMinter[_tokenId] == parseData(transferTx[5].toData(), 1)
+              .toAddress(12),
               "token needs to be transfered from last proven custody");
+      require(parseData(transferTx[5].toData(),4).toUint(0) ==
+              challengeNonce[_tokenId],
+              "nonce needs to equal required challengeNonce");
+
       //moves up root mint referecce to recipient address
-      tokenIdToMinter[_tokenId] = parseData(transferTx[5].toData(), 2).toAddress(12);
+      tokenIdToMinter[_tokenId] = parseData(transferTx[5].toData(), 2)
+                                  .toAddress(12);
       //updates challengeNonce to next step
       challengeNonce[_tokenId] += 1;
     }
-
+    emit Challenge(msg.sender, _to, _tokenId, challengeNonce[_tokenId]);
   }
 
   /*
   /**
    * @dev The existence of two tokenIds with same nonce indicates presence of
      double signing on the part of the Custodian => should punish Custodian
-   // TODO: how much to punish custodian??? can we pay out the stake instead of just burning it, pause contract??
+   // TODO: how much to punish custodian???
    * @param _to address to send stake given success
    * @param _tokenId uint256 Id of token on TokenContract
-   * @param _rawTxBundle bytes32[] concatenation of bytes _transactionTx, bytes _custodianTx
-   * @param _txLengths lengths of transactions in rawTxBundle, used for efficiency purposes
+   * @param _rawTxBundle bytes32[] concatenation of bytes _transactionTx,
+     bytes _custodianTx
+   * @param _txLengths lengths of transactions in rawTxBundle, for efficiency
    * @param _txMsgHashes msghashes of transactions in bundle
   */
   function submitCustodianDoubleSign(address _to,
@@ -1250,7 +1278,7 @@ contract DepositContract {
   /*
   /**
    * @dev Splits a rawTxBundle received to its individual transactions.
-   * Necessary due to limitation in amount of data transferable through solidity arguments
+   * Necessary due to limitation in amount of data transferable through solidity
    * @param  _rawTxBundle that is a concatenation of bytes _withdrawTx,
              bytes _lastTx, bytes _custodianTx
    * @param _txLengths lengths of transactions in rawTxBundle
@@ -1261,7 +1289,9 @@ contract DepositContract {
                          bytes[] storage _rawTxList) internal {
     uint256 txStartPosition = 0;
     for (uint i = 0; i < _txLengths.length; i++) {
-      _rawTxList[i] = sliceBytes32Arr(_rawTxBundle, txStartPosition, _txLengths[i]);
+      _rawTxList[i] = sliceBytes32Arr(_rawTxBundle,
+                                      txStartPosition,
+                                      _txLengths[i]);
       txStartPosition = txStartPosition.add(_txLengths[i]);
       txStartPosition = txStartPosition + (64 - txStartPosition % 64);
     }
@@ -1270,13 +1300,15 @@ contract DepositContract {
   /*
   /**
    * @dev Splits a rawTxBundle received to its individual transactions.
-   * Necessary due to limitation in amount of data transferable through solidity arguments
+   * Necessary due to limitation in amount of data transferable through solidity
    * @param  _transferTx RLP item array representing transferTx
    * @param _tokenId RLP item array representing corresponding custodianTx
    * @param _rawTxBundle bytes32 _custodianTx msgHash
   */
   //TODO: MAKE MORE EFFICENT
-  function sliceBytes32Arr(bytes32[] _bytes32ArrBundle, uint256 _startPosition, uint256 _length) internal returns (bytes) {
+  function sliceBytes32Arr(bytes32[] _bytes32ArrBundle,
+                           uint256 _startPosition,
+                           uint256 _length) internal returns (bytes) {
     bytes memory out;
     uint256 i = _startPosition.div(64);
     uint256 endPosition = _startPosition.add(_length);
@@ -1284,7 +1316,8 @@ contract DepositContract {
     for (i ; i < z; i++) {
       out = out.concat(bytes32ToBytes(_bytes32ArrBundle[i]));
     }
-    out = out.concat(bytes32ToBytes(_bytes32ArrBundle[z]).slice(0, (endPosition % 64 / 2) - 1));
+    out = out.concat(bytes32ToBytes(_bytes32ArrBundle[z]).
+              slice(0, (endPosition % 64 / 2) - 1));
     return out;
   }
 
@@ -1384,9 +1417,9 @@ contract DepositContract {
     return ecrecover(hash, v, r, s);
   }
 
-  function ecverify(bytes32 hash, bytes sig, address signer) public returns (bool) {
+  function ecverify(bytes32 hash, bytes sig, address signer)
+  public returns (bool) {
     return signer == ecrecovery(hash, sig);
   }
 
 }
-

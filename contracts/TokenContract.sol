@@ -16,12 +16,9 @@ contract TokenContract is ERC721BasicToken {
   using RLP for bytes;
   using BytesLib for bytes;
 
-  string contractState = "preStaked";
   address depositContract;
   address custodian;
   address custodianHome;
-  uint256 stakedAmount;
-  uint256 mintCap;
   uint256 mintedAmount;
   uint256 public mintNonce = 0;
   mapping (uint256 => uint256) public transferNonce;
@@ -37,18 +34,6 @@ contract TokenContract is ERC721BasicToken {
     }
   }
 
-  modifier statePreStaked () {
-    if (keccak256(contractState) == keccak256("preStaked"))  {
-      _;
-    }
-  }
-
-  modifier stateStaked () {
-    if (keccak256(contractState) == keccak256("staked"))  {
-      _;
-    }
-  }
-
   event Mint(uint256 amount,
              address indexed depositedTo,
              uint256 mintNonce,
@@ -60,15 +45,8 @@ contract TokenContract is ERC721BasicToken {
                         uint256 declaredNonce,
                         bytes32 approvalHash);
 
-  function setDepositContract(address _depositContract)
-  onlyCustodian statePreStaked public {
+  function setDepositContract(address _depositContract) onlyCustodian public {
     depositContract = _depositContract;
-  }
-
-  function finalizeStake() onlyCustodian statePreStaked public {
-    stakedAmount = address(this).balance;
-    mintCap = address(this).balance.div(2);
-    contractState = "staked";
   }
 
   function mint(uint256 _value, address _to) public {
