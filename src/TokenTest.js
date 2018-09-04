@@ -23,6 +23,7 @@ var publicAddress3 = '0x8CCd089c3208C9D6cd171dddEEbBa6bA185Ab5A9';
 //Require dependencies
 var ethers = require('ethers');
 var utils = require('ethers').utils;
+var web3Utils = require('web3').utils;
 var fs = require('fs');
 var solc = require('solc');
 var provider = new ethers.providers.InfuraProvider(network = network,

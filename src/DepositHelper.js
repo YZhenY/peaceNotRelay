@@ -22,6 +22,8 @@ var tokenContractAddress; //to be set after deploying contract
 //Require dependencies
 var ethers = require('ethers');
 var utils = require('ethers').utils;
+var web3Utils = require('web3').utils;
+const EthereumTx = require('ethereumjs-tx');
 var fs = require('fs');
 var solc = require('solc');
 var provider = new ethers.providers.InfuraProvider(network = network,
@@ -112,6 +114,62 @@ module.exports = {
      var txHash = await module.exports.getTxHash(result);
      await console.log('withdraw() txHash: ' + txHash);
      return txHash;
+  },
+
+  formBundleLengthsHashes: function(rawTxArr) {
+    var bundleArr = [];
+    var txLengths = [];
+    var txMsgHashes = [];
+    rawTxArr.forEach((value, i) => {
+      bundleArr[i] = value.rawTx.toString('hex');
+      txLengths[i] = value.rawTx.toString('hex').length + 2;
+      txMsgHashes[i] = value.msgHash;
+    })
+    var bytes32Bundle = module.exports.txsToBytes32BundleArr(bundleArr);
+    return {bytes32Bundle: bytes32Bundle, txLengths: txLengths, txMsgHashes: txMsgHashes};
+  },
+
+  txsToBytes32BundleArr: function (rawTxStringArr) {
+    var bytes32Bundle = [];
+    rawTxStringArr.forEach(value => {
+      var tempBundle = toBytes32BundleArr(value);
+      tempBundle.forEach(value => bytes32Bundle.push(value));
+    })
+    return bytes32Bundle;
+  },
+
+  toBytes32BundleArr: function (rawBundle) {
+    var bytes32Bundle = [];
+    for (var i = 0; i < rawBundle.length; i ++) {
+      bytes32Bundle[Math.floor(i / 64)] = (bytes32Bundle[Math.floor(i / 64)]) ? bytes32Bundle[Math.floor(i / 64)] + rawBundle[i] : rawBundle[i] ;
+    }
+    bytes32Bundle.forEach((value, index) => {
+      bytes32Bundle[index] = '0x' + bytes32Bundle[index];
+    })
+    return bytes32Bundle;
+  },
+
+  generateRawTxAndMsgHash: async function(_pubK, _privK, _to, _value, _data, _wallet) {
+    var txParams = {};
+    txParams.nonce = await provider.getTransactionCount(_wallet.address);
+    txParams.gasPrice = web3Utils.toHex(500);
+    txParams.gasLimit = web3Utils.toHex(6721975);
+    txParams.to = _to;
+    txParams.value = web3Utils.toHex(_value);
+    txParams.data = _data;
+    var tx = new EthereumTx(txParams)
+    tx.sign(new Buffer.from(_privK, 'hex'));
+    const rawTx = tx.serialize();
+
+    //Form msgHash
+    var decoded = utils.RLP.decode('0x' + rawTx.toString('hex'));
+    var txArrParams = []
+    for (var i = 0; i < 6; i ++) {
+      txArrParams.push('0x' + decoded[i].toString('hex'));
+    }
+    var msgHash = utils.keccak256('0x' + utils.RLP.encode(txArrParams).toString('hex'));
+
+    return {rawTx: rawTx, msgHash: msgHash};
   }
 
 }

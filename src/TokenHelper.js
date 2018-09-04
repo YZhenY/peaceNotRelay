@@ -7,6 +7,7 @@ This script provides helper functions for testing TokenContract.sol
 //Require dependencies
 var ethers = require('ethers');
 var utils = require('ethers').utils;
+var web3Utils = require('web3').utils;
 var fs = require('fs');
 var solc = require('solc');
 
@@ -63,7 +64,7 @@ module.exports = {
   //------------------------------------------------------------------------------
   //Interacting with TokenContract instance
 
-  mintCall: async function(_amt, _publicAddress, _contractInstance) {  
+  mintCall: async function(_amt, _publicAddress, _contractInstance) {
       var result = await _contractInstance.mint(_amt, _publicAddress);
       var txHash = await module.exports.getTxHash(result);
       await console.log('mint() txHash: ' + txHash);

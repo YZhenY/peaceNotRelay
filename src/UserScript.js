@@ -30,6 +30,7 @@ var depositContractAddr = '0x93DBC7AFAbF7bd1E3c726D69215e319b5F61a3aA';
 //Require dependencies
 var ethers = require('ethers');
 var utils = require('ethers').utils;
+var web3Utils = require('web3').utils;
 var fs = require('fs');
 var solc = require('solc');
 var foreignProvider = new ethers.providers.InfuraProvider(network = foreignNetwork,
@@ -137,4 +138,35 @@ async function instantiateAndTest(){
   await userTest(custTokenContract, tokenContract, tokenContract2, depositContract)
 }
 
-instantiateAndTest()
+// instantiateAndTest()
+const EthereumTx = require('ethereumjs-tx');
+async function generateRawTxAndMsgHash(_pubK, _privK, _to, _value, _data, _provider, _wallet) {
+  var txParams = {};
+  txParams.nonce = 6;
+  // txParams.nonce = await _provider.getTransactionCount(_wallet.address);
+  txParams.gasPrice = web3Utils.toHex(5000000000);
+  txParams.gasLimit = web3Utils.toHex(1500000);
+  txParams.to = _to;
+  txParams.value = web3Utils.toHex(_value);
+  txParams.data = _data;
+
+  var tx = new EthereumTx(txParams)
+  tx.sign(new Buffer.from(_privK, 'hex'));
+  const rawTx = tx.serialize();
+  console.log(rawTx)
+
+  // //Form msgHash
+  var decoded = utils.RLP.decode('0x' + rawTx.toString('hex'));
+  var txArrParams = []
+  for (var i = 0; i < 6; i ++) {
+    txArrParams.push(decoded[i].toString('hex'));
+  }
+  console.log(txArrParams)
+
+  var msgHash = utils.keccak256(utils.RLP.encode(txArrParams).toString('hex'));
+  console.log(msgHash);
+
+  return {rawTx: rawTx, msgHash: msgHash};
+}
+
+generateRawTxAndMsgHash('0x9677044a39550cebb01fa79bec04cf54e162d0c3', '2b847e2e99d7600ab0fbae23643a6a81d009aaf0573e887b41079b614f61e450', '0x93dbc7afabf7bd1e3c726d69215e319b5f61a3aa', 10000, '0x6e553f6514ece91f835638cae70f2fd8f42c4a9ad6ed53a032555e100e4b7ca4219691ec0000000000000000000000009677044a39550cebb01fa79bec04cf54e162d0c3', foreignProvider, foreignWallet)
