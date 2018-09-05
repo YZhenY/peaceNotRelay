@@ -46,7 +46,9 @@ module.exports = {
   },
 
   deployContract: async function(_bytecode, _abi, _publicAddress, _wallet){
-    var deployTransaction = ethers.Contract.getDeployTransaction("0x"+_bytecode, _abi, _publicAddress);
+    var deployTransaction = ethers.Contract.getDeployTransaction("0x"+_bytecode,
+                                                                 _abi,
+                                                                 _publicAddress);
     deployTransaction.gasLimit = 3500000;
     var tx = await _wallet.sendTransaction(deployTransaction);
     var txHash = await module.exports.getTxHash(tx);
@@ -126,7 +128,9 @@ module.exports = {
       txMsgHashes[i] = value.msgHash;
     })
     var bytes32Bundle = module.exports.txsToBytes32BundleArr(bundleArr);
-    return {bytes32Bundle: bytes32Bundle, txLengths: txLengths, txMsgHashes: txMsgHashes};
+    return {bytes32Bundle: bytes32Bundle,
+            txLengths: txLengths,
+            txMsgHashes: txMsgHashes};
   },
 
   txsToBytes32BundleArr: function (rawTxStringArr) {
@@ -141,7 +145,9 @@ module.exports = {
   toBytes32BundleArr: function (rawBundle) {
     var bytes32Bundle = [];
     for (var i = 0; i < rawBundle.length; i ++) {
-      bytes32Bundle[Math.floor(i / 64)] = (bytes32Bundle[Math.floor(i / 64)]) ? bytes32Bundle[Math.floor(i / 64)] + rawBundle[i] : rawBundle[i] ;
+      bytes32Bundle[Math.floor(i / 64)] = (bytes32Bundle[Math.floor(i / 64)]) ?
+                                           bytes32Bundle[Math.floor(i / 64)] +
+                                           rawBundle[i] : rawBundle[i] ;
     }
     bytes32Bundle.forEach((value, index) => {
       bytes32Bundle[index] = '0x' + bytes32Bundle[index];
@@ -149,25 +155,29 @@ module.exports = {
     return bytes32Bundle;
   },
 
-  generateRawTxAndMsgHash: async function(_pubK, _privK, _to, _value, _data, _wallet) {
+  generateRawTxAndMsgHash: async function(_pubK, _privK, _to, _value, _data,
+                                          _provider, _wallet) {
     var txParams = {};
-    txParams.nonce = await provider.getTransactionCount(_wallet.address);
+    txParams.nonce = await _provider.getTransactionCount(_wallet.address);
     txParams.gasPrice = web3Utils.toHex(500);
     txParams.gasLimit = web3Utils.toHex(6721975);
     txParams.to = _to;
     txParams.value = web3Utils.toHex(_value);
     txParams.data = _data;
+
     var tx = new EthereumTx(txParams)
     tx.sign(new Buffer.from(_privK, 'hex'));
+    console.log("tx ", tx)
     const rawTx = tx.serialize();
+    console.log(rawTx)
 
-    //Form msgHash
+    // //Form msgHash
     var decoded = utils.RLP.decode('0x' + rawTx.toString('hex'));
     var txArrParams = []
     for (var i = 0; i < 6; i ++) {
-      txArrParams.push('0x' + decoded[i].toString('hex'));
+      txArrParams.push(decoded[i].toString('hex'));
     }
-    var msgHash = utils.keccak256('0x' + utils.RLP.encode(txArrParams).toString('hex'));
+    var msgHash = utils.keccak256(utils.RLP.encode(txArrParams).toString('hex'));
 
     return {rawTx: rawTx, msgHash: msgHash};
   }

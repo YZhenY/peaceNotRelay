@@ -13,20 +13,16 @@ const EthereumTx = require('ethereumjs-tx')
 var RLP = require('rlp');
 var assertRevert = require('../utils/assertRevert.js');
 
-var transactionFields = [ 'nonce',
-'gasPrice',
-'gasLimit',
-'to',
-'value',
-'data',
-'v',
-'r',
-'s',
-'from' ]
-
-
-
-
+var transactionFields = ['nonce',
+                         'gasPrice',
+                         'gasLimit',
+                         'to',
+                         'value',
+                         'data',
+                         'v',
+                         'r',
+                         's',
+                         'from' ]
 
 web3.eth.sendRawTransaction = Promise.promisify(web3.eth.sendRawTransaction);
 web3.eth.getBalance = Promise.promisify(web3.eth.getBalance);
@@ -450,7 +446,7 @@ contract('Deposit-Token Contract Interactions', async (accounts) => {
 
     var withdrawArgs = formBundleLengthsHashes([rawWithdrawal, rawTxs[18], rawTxs[19]]);
     result = await depositContract.withdraw(accounts[8], tokenId, withdrawArgs.bytes32Bundle, withdrawArgs.txLengths, withdrawArgs.txMsgHashes, 9, {gasPrice: gasPrice, value:stakeValue * 9});
-    
+
     //STARTING CHALLENGE AGAINST HONEST WITHDRAWAL
     var challengeArgs = formBundleLengthsHashes(rawTxs.slice(0,2));
     result = await depositContract.initiateChallengeWithPastCustody(accounts[5], tokenId, challengeArgs.bytes32Bundle, challengeArgs.txLengths, challengeArgs.txMsgHashes, {gasPrice: gasPrice, value:stakeValue * 4});

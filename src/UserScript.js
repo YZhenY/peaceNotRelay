@@ -31,6 +31,7 @@ var depositContractAddr = '0x93DBC7AFAbF7bd1E3c726D69215e319b5F61a3aA';
 var ethers = require('ethers');
 var utils = require('ethers').utils;
 var web3Utils = require('web3').utils;
+const EthereumTx = require('ethereumjs-tx');
 var fs = require('fs');
 var solc = require('solc');
 var foreignProvider = new ethers.providers.InfuraProvider(network = foreignNetwork,
@@ -113,6 +114,44 @@ async function userTest(_custTokenContractInstance,
   }, foreignBlockTimeDelay*3 + homeBlockTimeDelay)
 
   //5. Bob withdraws from DepositContract
+  setTimeout(async function(){
+    var rawTransferFrom = await depositHelper.generateRawTxAndMsgHash(
+      accounts[2],
+      privKeys[2],
+      tokenContractAddr,
+      0,
+      tokenContract.transferFrom.request(accounts[2], accounts[3], tokenId.toString(), 0).params[0].data
+    )
+
+    var rawCustodianApprove = await depositHelper.generateRawTxAndMsgHash(
+      accounts[1],
+      privKeys[1],
+      tokenContractAddr,
+      0,
+      tokenContract.custodianApprove.request(tokenId.toString(), 0).params[0].data
+    )
+
+    var rawWithdrawal = await depositHelper.generateRawTxAndMsgHash(
+      accounts[3],
+      privKeys[3],
+      tokenContractAddr,
+      0,
+      tokenContract.withdraw.request(tokenId.toString()).params[0].data
+    )
+
+    var bytes32Bundle = [];
+    // console.log("RAW: ", [rawWithdrawal.rawTx.toString('hex'), rawTransferFrom.rawTx.toString('hex'), rawCustodianApprove.rawTx.toString('hex')]);
+    [rawWithdrawal.rawTx.toString('hex'), rawTransferFrom.rawTx.toString('hex'), rawCustodianApprove.rawTx.toString('hex')].forEach((value) => {
+      var tempBundle = toBytes32BundleArr(value);
+      tempBundle.forEach(value => bytes32Bundle.push(value));
+    })
+    var txLengths = [rawWithdrawal.rawTx.toString('hex').length + 2, rawTransferFrom.rawTx.toString('hex').length + 2, rawCustodianApprove.rawTx.toString('hex').length + 2 ];
+    var txMsgHashes = [rawWithdrawal.msgHash, rawTransferFrom.msgHash, rawCustodianApprove.msgHash];
+
+    result = await depositContract.withdraw(accounts[4], tokenId, bytes32Bundle, txLengths, txMsgHashes, 1, {gasPrice: gasPrice, value:stakeValue});
+    console.log(`withdraw() gas used: ${result.receipt.gasUsed}`);
+
+  }, foreignBlockTimeDelay*3 + homeBlockTimeDelay)
 
 }
 
@@ -139,34 +178,5 @@ async function instantiateAndTest(){
 }
 
 // instantiateAndTest()
-const EthereumTx = require('ethereumjs-tx');
-async function generateRawTxAndMsgHash(_pubK, _privK, _to, _value, _data, _provider, _wallet) {
-  var txParams = {};
-  txParams.nonce = 6;
-  // txParams.nonce = await _provider.getTransactionCount(_wallet.address);
-  txParams.gasPrice = web3Utils.toHex(5000000000);
-  txParams.gasLimit = web3Utils.toHex(1500000);
-  txParams.to = _to;
-  txParams.value = web3Utils.toHex(_value);
-  txParams.data = _data;
 
-  var tx = new EthereumTx(txParams)
-  tx.sign(new Buffer.from(_privK, 'hex'));
-  const rawTx = tx.serialize();
-  console.log(rawTx)
-
-  // //Form msgHash
-  var decoded = utils.RLP.decode('0x' + rawTx.toString('hex'));
-  var txArrParams = []
-  for (var i = 0; i < 6; i ++) {
-    txArrParams.push(decoded[i].toString('hex'));
-  }
-  console.log(txArrParams)
-
-  var msgHash = utils.keccak256(utils.RLP.encode(txArrParams).toString('hex'));
-  console.log(msgHash);
-
-  return {rawTx: rawTx, msgHash: msgHash};
-}
-
-generateRawTxAndMsgHash('0x9677044a39550cebb01fa79bec04cf54e162d0c3', '2b847e2e99d7600ab0fbae23643a6a81d009aaf0573e887b41079b614f61e450', '0x93dbc7afabf7bd1e3c726d69215e319b5f61a3aa', 10000, '0x6e553f6514ece91f835638cae70f2fd8f42c4a9ad6ed53a032555e100e4b7ca4219691ec0000000000000000000000009677044a39550cebb01fa79bec04cf54e162d0c3', foreignProvider, foreignWallet)
+depositHelper.generateRawTxAndMsgHash('0x9677044a39550cebb01fa79bec04cf54e162d0c3', '2b847e2e99d7600ab0fbae23643a6a81d009aaf0573e887b41079b614f61e450', '0x93dbc7afabf7bd1e3c726d69215e319b5f61a3aa', 10000, '0x6e553f6514ece91f835638cae70f2fd8f42c4a9ad6ed53a032555e100e4b7ca4219691ec0000000000000000000000009677044a39550cebb01fa79bec04cf54e162d0c3', foreignProvider, foreignWallet)
