@@ -23,6 +23,8 @@ var tokenContractAddress; //to be set after deploying contract
 var ethers = require('ethers');
 var utils = require('ethers').utils;
 var web3Utils = require('web3').utils;
+var Web3 = require("web3");
+var web3 = new Web3(new Web3.providers.HttpProvider("https://mainnet.infura.io/<your access key>:8545"));
 const EthereumTx = require('ethereumjs-tx');
 var fs = require('fs');
 var solc = require('solc');
@@ -155,7 +157,7 @@ module.exports = {
     return bytes32Bundle;
   },
 
-  generateRawTxAndMsgHash: async function(_pubK, _privK, _to, _value, _data,
+  generateRawTxAndMsgHash: async function(_privK, _to, _value, _data,
                                           _provider, _wallet) {
     var txParams = {};
     txParams.nonce = await _provider.getTransactionCount(_wallet.address);
@@ -166,10 +168,10 @@ module.exports = {
     txParams.data = _data;
 
     var tx = new EthereumTx(txParams)
+    console.log(tx)
     tx.sign(new Buffer.from(_privK, 'hex'));
-    console.log("tx ", tx)
+    console.log(tx)
     const rawTx = tx.serialize();
-    console.log(rawTx)
 
     // //Form msgHash
     var decoded = utils.RLP.decode('0x' + rawTx.toString('hex'));

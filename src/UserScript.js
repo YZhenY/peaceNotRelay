@@ -31,6 +31,8 @@ var depositContractAddr = '0x93DBC7AFAbF7bd1E3c726D69215e319b5F61a3aA';
 var ethers = require('ethers');
 var utils = require('ethers').utils;
 var web3Utils = require('web3').utils;
+var Web3 = require("web3");
+var web3 = new Web3(new Web3.providers.HttpProvider("https://rinkeby.infura.io/9744d40b99e34a57850802d4c6433ab8:8545"));
 const EthereumTx = require('ethereumjs-tx');
 var fs = require('fs');
 var solc = require('solc');
@@ -178,5 +180,5 @@ async function instantiateAndTest(){
 }
 
 // instantiateAndTest()
-
-depositHelper.generateRawTxAndMsgHash('0x9677044a39550cebb01fa79bec04cf54e162d0c3', '2b847e2e99d7600ab0fbae23643a6a81d009aaf0573e887b41079b614f61e450', '0x93dbc7afabf7bd1e3c726d69215e319b5f61a3aa', 10000, '0x6e553f6514ece91f835638cae70f2fd8f42c4a9ad6ed53a032555e100e4b7ca4219691ec0000000000000000000000009677044a39550cebb01fa79bec04cf54e162d0c3', foreignProvider, foreignWallet)
+console.log(web3.eth.getRawTransactionByHash('0xc6103905907a0b466c949d2d6b20096f46b26a3f1066c2955c91043dca5186b4'))
+// depositHelper.generateRawTxAndMsgHash('0x9677044a39550cebb01fa79bec04cf54e162d0c3', '2b847e2e99d7600ab0fbae23643a6a81d009aaf0573e887b41079b614f61e450', '0x93dbc7afabf7bd1e3c726d69215e319b5f61a3aa', 10000, '0x6e553f6514ece91f835638cae70f2fd8f42c4a9ad6ed53a032555e100e4b7ca4219691ec0000000000000000000000009677044a39550cebb01fa79bec04cf54e162d0c3', foreignProvider, foreignWallet)
