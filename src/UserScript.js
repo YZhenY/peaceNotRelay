@@ -7,7 +7,7 @@ This script simulates a user interacting with TokenContract and DepositContract
 //Set parameters
 var infuraAPI = '9744d40b99e34a57850802d4c6433ab8';
 
-var foreignNetwork = 'rinkeby'; //'rinkeby', 'ropsten', 'kovan', 'homestead'
+var foreignNetwork = 'kovan'; //'rinkeby', 'ropsten', 'kovan', 'homestead'
 var foreignCustPrivateKey = '0x13410a539b4fdb8dabde37ff8d687cc'+
                             '23eea64ab11eaf348a2fd775ba71a31cc';
 var foreignCustPublicAddr = '0xC33Bdb8051D6d2002c0D80A1Dd23A1c9d9FC26E4';
@@ -28,8 +28,8 @@ var homePrivateKey = '0x2b847e2e99d7600ab0fbae23643a6a8'+
 var homePublicAddr = '0x9677044a39550cEbB01fa79bEC04Cf54E162d0C3';
 var homeBlockTimeDelay = 55000;
 
-var tokenContractAddr = '0x352246304ff47F2458775Cd9a4989f02E50f2Ec6';
-var depositContractAddr = '0x93DBC7AFAbF7bd1E3c726D69215e319b5F61a3aA';
+var tokenContractAddr = '0x0944a635FeB3A3c4F199bffc28B58B565D28D6EF';
+var depositContractAddr = '0x576b9AB554bA54c93568dEF83Da64bb8862232BB';
 
 //------------------------------------------------------------------------------
 //Require dependencies
@@ -130,7 +130,7 @@ async function userTest(_custTokenContractInstance,
   //5. Bob withdraws from DepositContract
   setTimeout(async function(){
     withdrawalTxHash = await tokenHelper.withdrawCall(tokenId, _tokenContractInstance2)
-  }foreignBlockTimeDelay*4 + homeBlockTimeDelay)
+  }, foreignBlockTimeDelay*4 + homeBlockTimeDelay)
 
   setTimeout(async function(){
     var rawTransferFrom = await depositHelper.generateRawTxAndMsgHash(transferTxHash,

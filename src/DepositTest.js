@@ -6,7 +6,7 @@ functions interacting with the contract
 
 //------------------------------------------------------------------------------
 //Set parameters
-var network = 'kovan'; //'rinkeby', 'ropsten', 'kovan', 'homestead'
+var network = 'ropsten'; //'rinkeby', 'ropsten', 'kovan', 'homestead'
 var blockTimeDelay = 55000;
 var infuraAPI = '9744d40b99e34a57850802d4c6433ab8';
 var privateKey = '0x13410a539b4fdb8dabde37ff8d687cc' +
@@ -52,10 +52,8 @@ const abi = JSON.parse(output.contracts['DepositContract_flat.sol:DepositContrac
                        interface);
 //------------------------------------------------------------------------------
 //Specify TokenContract parameters
-var tokenContractAddr = '0x352246304ff47F2458775Cd9a4989f02E50f2Ec6';
-var tokenIdDec = 16118818340691892296820170890762028606357708147991905105415102369943739718021
-var tokenIdHex = '0x23a2ed894fa2aa535bd368dac20708426157125cf901ad4d16ca2d9f90045985'
-
+var tokenContractAddr = '0x0944a635FeB3A3c4F199bffc28B58B565D28D6EF';
+var tokenContractNetwork = 'kovan'; //'rinkeby', 'ropsten', 'kovan', 'homestead'
 //------------------------------------------------------------------------------
 //Write tests
 async function testFunctions(_contractInstance, _contractAddr){
