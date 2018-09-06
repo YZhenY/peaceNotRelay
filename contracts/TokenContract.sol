@@ -32,7 +32,7 @@ contract TokenContract is ERC721BasicToken {
     require(custodian == msg.sender);
     _;
   }
-  
+
   event Mint(uint256 amount,
              address indexed depositedTo,
              uint256 mintNonce,
@@ -59,9 +59,9 @@ contract TokenContract is ERC721BasicToken {
     mintNonce += 1;
   }
 
-  //USED TO ANNOUNCE A WITHDRAWL (DOESNT NECESSISTATE SUBMISSION)
   function withdraw(uint256 _tokenId) public {
     emit Withdraw(_tokenId);
+    //USED TO ANNOUNCE A WITHDRAWL (DOESNT NECESSISTATE SUBMISSION)
   }
 
   /* ERC721 Related Functions --------------------------------------------------*/

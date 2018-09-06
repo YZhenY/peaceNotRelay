@@ -167,7 +167,7 @@ contract DepositContract {
                                      uint8(withdrawTx[6].toUint()), //v
                                      withdrawTx[7].toBytes32(), //r
                                      withdrawTx[8].toBytes32()), //s
-            "WithdrawalTx not signed by lastTx receipient");
+                                     "WithdrawalTx not signed by lastTx receipient");
 
     //require that a challenge period is not underway
     require(challengeTime[_tokenId] == 0);

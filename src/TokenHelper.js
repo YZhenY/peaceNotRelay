@@ -89,6 +89,13 @@ module.exports = {
     await console.log("tokenId " + _tokenId + " transferred from address " +
                       _from + " to address " + _to + " in transaction " + txHash);
     return txHash;
+  },
+
+  withdrawCall: async function(_tokenId, _contractInstance) {
+    var tx = await _contractInstance.withdraw(_tokenId);
+    var txHash = await module.exports.getTxHash(tx);
+    await console.log("tokenId " + _tokenId + " withdrawn");
+    return txHash;
   }
 
 }

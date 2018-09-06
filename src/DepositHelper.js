@@ -5,7 +5,7 @@ This script provides helper functions for testing DepositContract.sol
 
 //------------------------------------------------------------------------------
 //Set parameters
-var network = 'kovan';
+var network = 'ropsten'; //'rinkeby', 'ropsten', 'kovan', 'homestead'
 var infuraAPI = '9744d40b99e34a57850802d4c6433ab8';
 var privateKey = '0x13410a539b4fdb8dabde37ff8d687cc' +
                  '23eea64ab11eaf348a2fd775ba71a31cc';
@@ -22,10 +22,11 @@ var tokenContractAddress; //to be set after deploying contract
 //Require dependencies
 var ethers = require('ethers');
 var utils = require('ethers').utils;
-var web3Utils = require('web3').utils;
+var EthereumTx = require('ethereumjs-tx');
+var fs = require('fs');
+var solc = require('solc');
 var Web3 = require("web3");
-var web3 = new Web3(new Web3.providers.HttpProvider("https://mainnet.infura.io/<your access key>:8545"));
-const EthereumTx = require('ethereumjs-tx');
+var web3 = new Web3(new Web3.providers.HttpProvider("https://" + network + ".infura.io/" + infuraAPI));
 var fs = require('fs');
 var solc = require('solc');
 var provider = new ethers.providers.InfuraProvider(network = network,
@@ -157,20 +158,20 @@ module.exports = {
     return bytes32Bundle;
   },
 
-  generateRawTxAndMsgHash: async function(_privK, _to, _value, _data,
-                                          _provider, _wallet) {
+  generateRawTxAndMsgHash: async function(_txHash, _web3Provider) {
     var txParams = {};
-    txParams.nonce = await _provider.getTransactionCount(_wallet.address);
-    txParams.gasPrice = web3Utils.toHex(500);
-    txParams.gasLimit = web3Utils.toHex(6721975);
-    txParams.to = _to;
-    txParams.value = web3Utils.toHex(_value);
-    txParams.data = _data;
+    var tx = await _web3Provider.eth.getTransaction(_txHash);
+    txParams.nonce = await utils.bigNumberify(tx['nonce']).toHexString();
+    txParams.gasPrice = await utils.bigNumberify(tx['gasPrice']).toHexString();
+    txParams.gasLimit = await utils.bigNumberify(tx['gas']).toHexString();
+    txParams.to = await tx['to'];
+    txParams.value = await utils.bigNumberify(tx['value']).toHexString();
+    txParams.data = await tx['input'];
+    txParams.v = await tx['v'];
+    txParams.r = await tx['r'];
+    txParams.s = await tx['s'];
 
     var tx = new EthereumTx(txParams)
-    console.log(tx)
-    tx.sign(new Buffer.from(_privK, 'hex'));
-    console.log(tx)
     const rawTx = tx.serialize();
 
     // //Form msgHash
@@ -179,6 +180,7 @@ module.exports = {
     for (var i = 0; i < 6; i ++) {
       txArrParams.push(decoded[i].toString('hex'));
     }
+
     var msgHash = utils.keccak256(utils.RLP.encode(txArrParams).toString('hex'));
 
     return {rawTx: rawTx, msgHash: msgHash};
