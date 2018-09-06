@@ -28,8 +28,8 @@ var homePrivateKey = '0x2b847e2e99d7600ab0fbae23643a6a8'+
 var homePublicAddr = '0x9677044a39550cEbB01fa79bEC04Cf54E162d0C3';
 var homeBlockTimeDelay = 55000;
 
-var tokenContractAddr = '0x0944a635FeB3A3c4F199bffc28B58B565D28D6EF';
-var depositContractAddr = '0x576b9AB554bA54c93568dEF83Da64bb8862232BB';
+var tokenContractAddr = '0x2f5CB8ad4701Cca7557ac30414215a99101F5193';
+var depositContractAddr = '0xF572f27B262c2Dc0fCd4E516Ada5e0c023B22421';
 
 //------------------------------------------------------------------------------
 //Require dependencies
@@ -144,7 +144,7 @@ async function userTest(_custTokenContractInstance,
     [rawWithdrawal.rawTx.toString('hex'),
      rawTransferFrom.rawTx.toString('hex'),
      rawCustodianApprove.rawTx.toString('hex')].forEach((value) => {
-      var tempBundle = toBytes32BundleArr(value);
+      var tempBundle = depositHelper.toBytes32BundleArr(value);
       tempBundle.forEach(value => bytes32Bundle.push(value));
     })
     var txLengths = [rawWithdrawal.rawTx.toString('hex').length + 2,
@@ -153,19 +153,14 @@ async function userTest(_custTokenContractInstance,
     var txMsgHashes = [rawWithdrawal.msgHash,
                        rawTransferFrom.msgHash,
                        rawCustodianApprove.msgHash];
-    result = await depositContract.withdraw(accounts[4],
+    result = await depositHelper.withdrawCall(foreignPublicAddr2,
                                             tokenId,
                                             bytes32Bundle,
                                             txLengths,
                                             txMsgHashes,
-                                            1,
-                                            {gasPrice: gasPrice,
-                                              value:stakeValue});
-    console.log(`withdraw() gas used: ${result.receipt.gasUsed}`);
+                                            1, _depositContractInstance);
   }, foreignBlockTimeDelay*5 + homeBlockTimeDelay)
-
 }
-
 
 //3. transfer on TokenContract
 
@@ -189,5 +184,3 @@ async function instantiateAndTest(){
 }
 
 instantiateAndTest()
-
-// depositHelper.generateRawTxAndMsgHash('0xc6103905907a0b466c949d2d6b20096f46b26a3f1066c2955c91043dca5186b4', web3HomeProvider)

@@ -52,7 +52,7 @@ const abi = JSON.parse(output.contracts['DepositContract_flat.sol:DepositContrac
                        interface);
 //------------------------------------------------------------------------------
 //Specify TokenContract parameters
-var tokenContractAddr = '0x0944a635FeB3A3c4F199bffc28B58B565D28D6EF';
+var tokenContractAddr = '0x2f5CB8ad4701Cca7557ac30414215a99101F5193';
 var tokenContractNetwork = 'kovan'; //'rinkeby', 'ropsten', 'kovan', 'homestead'
 //------------------------------------------------------------------------------
 //Write tests

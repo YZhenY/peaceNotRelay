@@ -8,10 +8,12 @@ This script provides helper functions for testing DepositContract.sol
 var ethers = require('ethers');
 var utils = require('ethers').utils;
 var EthereumTx = require('ethereumjs-tx');
+var ethJsUtils = require('ethereumjs-util');
 var fs = require('fs');
 var solc = require('solc');
 var fs = require('fs');
 var solc = require('solc');
+var RLP = require('rlp');
 
 module.exports = {
   //------------------------------------------------------------------------------
@@ -120,7 +122,7 @@ module.exports = {
   txsToBytes32BundleArr: function (rawTxStringArr) {
     var bytes32Bundle = [];
     rawTxStringArr.forEach(value => {
-      var tempBundle = toBytes32BundleArr(value);
+      var tempBundle = module.exports.toBytes32BundleArr(value);
       tempBundle.forEach(value => bytes32Bundle.push(value));
     })
     return bytes32Bundle;
@@ -148,23 +150,28 @@ module.exports = {
     txParams.to = await tx['to'];
     txParams.value = await utils.bigNumberify(tx['value']).toHexString();
     txParams.data = await tx['input'];
-    txParams.v = await tx['v'];
-    txParams.r = await tx['r'];
-    txParams.s = await tx['s'];
+    txParams.v = await utils.bigNumberify(tx['v']).toHexString();
+    txParams.r = await utils.bigNumberify(tx['r']).toHexString();
+    txParams.s = await utils.bigNumberify(tx['s']).toHexString();
 
     var tx = new EthereumTx(txParams)
     const rawTx = tx.serialize();
 
     // //Form msgHash
-    var decoded = utils.RLP.decode('0x' + rawTx.toString('hex'));
+    var decoded = RLP.decode('0x' + rawTx.toString('hex'));
     var txArrParams = []
     for (var i = 0; i < 6; i ++) {
-      txArrParams.push(decoded[i].toString('hex'));
+      txArrParams.push('0x' + decoded[i].toString('hex'));
     }
 
-    var msgHash = utils.keccak256(utils.RLP.encode(txArrParams).toString('hex'));
+    var v = txParams.v;
+    var r = txParams.r;
+    var s = txParams.s;
+
+    var msgHash = _web3Provider.utils.sha3('0x' + RLP.encode(txArrParams).toString('hex'));
 
     return {rawTx: rawTx, msgHash: msgHash};
+
   }
 
 }
