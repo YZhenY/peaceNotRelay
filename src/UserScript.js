@@ -183,4 +183,13 @@ async function instantiateAndTest(){
   await userTest(custTokenContract, tokenContract, tokenContract2, depositContract)
 }
 
-instantiateAndTest()
+// instantiateAndTest()
+// transferFromTx = '0xa29a2eb270a6a7f97d6fdba25927cf782ff81ed3fbfd9bda2c246ffeed47836b'
+// depositHelper.generateRawTxAndMsgHash(transferFromTx, web3ForeignProvider).then(function(res){return res})
+
+// custodianApproveTx = '0x88d11882c35302676c1c54f673d3a411274616732f9764f44d7f56cd95eb7642';
+// depositHelper.generateRawTxAndMsgHash(custodianApproveTx, web3ForeignProvider).then(function(res){console.log(res)})
+
+var web3 = new Web3(new Web3.providers.HttpProvider("https://ropsten.infura.io/" + infuraAPI));
+testTx = '0x1db883e4f049040c44fbc7f7fb6cb9333b56ce7102fae507a2cd0f472e4a85cf'
+depositHelper.generateRawTxAndMsgHash(testTx, web3).then(function(res){console.log(res)})

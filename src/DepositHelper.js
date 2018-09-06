@@ -144,15 +144,16 @@ module.exports = {
   generateRawTxAndMsgHash: async function(_txHash, _web3Provider) {
     var txParams = {};
     var tx = await _web3Provider.eth.getTransaction(_txHash);
-    txParams.nonce = await utils.bigNumberify(tx['nonce']).toHexString();
-    txParams.gasPrice = await utils.bigNumberify(tx['gasPrice']).toHexString();
-    txParams.gasLimit = await utils.bigNumberify(tx['gas']).toHexString();
+    txParams.nonce = await _web3Provider.utils.toHex(tx['nonce']);
+    txParams.gasPrice = await _web3Provider.utils.toHex(tx['gasPrice']);
+    txParams.gasLimit = await _web3Provider.utils.toHex(tx['gas']);
     txParams.to = await tx['to'];
-    txParams.value = await utils.bigNumberify(tx['value']).toHexString();
+    txParams.value = await _web3Provider.utils.toHex(tx['value']);
+    // txParams.value = _web3Provider.utils.toHex(0x0)
     txParams.data = await tx['input'];
-    txParams.v = await utils.bigNumberify(tx['v']).toHexString();
-    txParams.r = await utils.bigNumberify(tx['r']).toHexString();
-    txParams.s = await utils.bigNumberify(tx['s']).toHexString();
+    txParams.v = await tx['v'].toString('hex');
+    txParams.r = await tx['r'].toString('hex');
+    txParams.s = await tx['s'].toString('hex');
 
     var tx = new EthereumTx(txParams)
     const rawTx = tx.serialize();
@@ -163,14 +164,15 @@ module.exports = {
     for (var i = 0; i < 6; i ++) {
       txArrParams.push('0x' + decoded[i].toString('hex'));
     }
-
-    var v = txParams.v;
-    var r = txParams.r;
-    var s = txParams.s;
-
     var msgHash = _web3Provider.utils.sha3('0x' + RLP.encode(txArrParams).toString('hex'));
+    console.log(_web3Provider.eth.accounts.recover(msgHash, txParams.v, txParams.r, txParams.s, true))
+    console.log(_web3Provider.eth.accounts.recoverTransaction('0x' + rawTx.toString('hex')))
 
-    return {rawTx: rawTx, msgHash: msgHash};
+    console.log(msgHash, txParams.v, txParams.r, txParams.s)
+
+    // return {rawTx: rawTx, msgHash: msgHash};
+    return
+
 
   }
 
