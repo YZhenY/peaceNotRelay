@@ -24,6 +24,7 @@
   "dependencies": {
     "bignumber.js": "^7.2.1",
     "bluebird": "^3.5.1",
+    "eth-lib": "^0.2.8",
     "ethereum-tx-decoder": "^2.0.1",
     "ethers": "^3.0.25",
     "rlp": "^2.1.0",

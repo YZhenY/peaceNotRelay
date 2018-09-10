@@ -94,7 +94,8 @@ module.exports = {
   withdrawCall: async function(_tokenId, _contractInstance) {
     var tx = await _contractInstance.withdraw(_tokenId);
     var txHash = await module.exports.getTxHash(tx);
-    await console.log("tokenId " + _tokenId + " withdrawn on TokenContract");
+    await console.log("tokenId " + _tokenId + " withdrawn on TokenContract" +
+                      "in transaction " + txHash);
     return txHash;
   }
 

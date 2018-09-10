@@ -153,12 +153,13 @@ async function userTest(_custTokenContractInstance,
     var txMsgHashes = [rawWithdrawal.msgHash,
                        rawTransferFrom.msgHash,
                        rawCustodianApprove.msgHash];
-    result = await depositHelper.withdrawCall(foreignPublicAddr2,
-                                            tokenId,
-                                            bytes32Bundle,
-                                            txLengths,
-                                            txMsgHashes,
-                                            1, _depositContractInstance);
+    result = await depositHelper.withdrawCall(206250*10000000000,
+                                              foreignPublicAddr2,
+                                              tokenId,
+                                              bytes32Bundle,
+                                              txLengths,
+                                              txMsgHashes,
+                                              1, _depositContractInstance);
   }, foreignBlockTimeDelay*5 + homeBlockTimeDelay)
 }
 
@@ -184,14 +185,34 @@ async function instantiateAndTest(){
 }
 
 // instantiateAndTest()
-// transferFromTx = '0xa29a2eb270a6a7f97d6fdba25927cf782ff81ed3fbfd9bda2c246ffeed47836b'
-// depositHelper.generateRawTxAndMsgHash(transferFromTx, web3ForeignProvider).then(function(res){return res})
 
-// custodianApproveTx = '0x88d11882c35302676c1c54f673d3a411274616732f9764f44d7f56cd95eb7642';
-// depositHelper.generateRawTxAndMsgHash(custodianApproveTx, web3ForeignProvider).then(function(res){console.log(res)})
+transferTxHash = '0x5b4d15a45ff70292c135cbc3fe8c627de04bf8f1394a7955c1770dc0c9bc8555'
+custodianApproveTxHash = '0xed8775b9f0f6e8530de6b035c6a8e7aef7025e1d96386b2f400664a7d7279184'
+withdrawalTxHash = '0xfa10ead8c0fa65d6d31dabbc385f46f3ac07b018dfd366e5c6c31171e34b0330'
 
-var web3 = new Web3(new Web3.providers.HttpProvider("https://kovan.infura.io/" + infuraAPI));
-// testTx = '0xa29a2eb270a6a7f97d6fdba25927cf782ff81ed3fbfd9bda2c246ffeed47836b'
-testTx = '0x88d11882c35302676c1c54f673d3a411274616732f9764f44d7f56cd95eb7642'
-depositHelper.generateRawTxAndMsgHash(testTx, web3).then(function(res){console.log(res)})
-depositHelper.generateRawTxAndMsgHash2(testTx, foreignPrivateKey.substr(2), web3).then(function(res){console.log(res)})
+async function withdrawTest(){
+  var rawTransferFrom = await depositHelper.generateRawTxAndMsgHash(transferTxHash,
+                                                                    web3ForeignProvider)
+  var rawCustodianApprove = await depositHelper.generateRawTxAndMsgHash(custodianApproveTxHash,
+                                                                        web3ForeignProvider)
+  var rawWithdrawal = await depositHelper.generateRawTxAndMsgHash(withdrawalTxHash,
+                                                                  web3ForeignProvider)
+  var bytes32Bundle = [];
+
+  [rawWithdrawal.rawTx.toString('hex'),
+   rawTransferFrom.rawTx.toString('hex'),
+   rawCustodianApprove.rawTx.toString('hex')].forEach((value) => {
+    var tempBundle = depositHelper.toBytes32BundleArr(value);
+    tempBundle.forEach(value => bytes32Bundle.push(value));
+  })
+  console.log(bytes32Bundle)
+  var txLengths = [rawWithdrawal.rawTx.toString('hex').length + 2,
+                   rawTransferFrom.rawTx.toString('hex').length + 2,
+                   rawCustodianApprove.rawTx.toString('hex').length + 2 ];
+  console.log(txLengths)
+  var txMsgHashes = [rawWithdrawal.msgHash,
+                     rawTransferFrom.msgHash,
+                     rawCustodianApprove.msgHash];
+  console.log(txMsgHashes)
+}
+withdrawTest()

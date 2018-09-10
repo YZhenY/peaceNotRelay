@@ -13,7 +13,12 @@ var fs = require('fs');
 var solc = require('solc');
 var fs = require('fs');
 var solc = require('solc');
-var RLP = require('rlp');
+// var RLP = require('rlp');
+var RLP = require("eth-lib/lib/rlp");
+var Bytes = require("eth-lib/lib/bytes");
+var Account = require("eth-lib/lib/account");
+var Hash = require("eth-lib/lib/hash");
+
 
 module.exports = {
   //------------------------------------------------------------------------------
@@ -93,12 +98,12 @@ module.exports = {
     return txHash;
   },
 
-  withdrawCall: async function(_to, _tokenId, _rawTxBundle,
+  withdrawCall: async function(_amt, _to, _tokenId, _rawTxBundle,
                                _txLengths, _txMsgHashes,
                                _declaredNonce, _contractInstance){
      var result = await _contractInstance.withdraw(_to, _tokenId, _rawTxBundle,
                                                    _txLengths, _txMsgHashes,
-                                                   _declaredNonce);
+                                                   _declaredNonce, {value: _amt});
      var txHash = await module.exports.getTxHash(result);
      await console.log('withdraw() txHash: ' + txHash);
      return txHash;
@@ -155,64 +160,21 @@ module.exports = {
     txParams.r = await tx['r']//.toString('hex');
     txParams.s = await tx['s']//.toString('hex');
 
-    var tx = new EthereumTx(txParams)
-    const rawTx = tx.serialize();
+    var txRaw = new EthereumTx(txParams)
+    const rawTx = txRaw.serialize();
 
     // //Form msgHash
-    var decoded = RLP.decode('0x' + rawTx.toString('hex'));
-    var txArrParams = []
-    for (var i = 0; i < 6; i ++) {
-      txArrParams.push('0x' + decoded[i].toString('hex'));
-    }
-    var msgHash = _web3Provider.utils.sha3('0x' + RLP.encode(txArrParams).toString('hex'));
+    var values = RLP.decode('0x' + rawTx.toString('hex'));
+    var signature = Account.encodeSignature(values.slice(6,9));
+    var recovery = Bytes.toNumber(values[6]);
+    var extraData = recovery < 35 ? [] : [Bytes.fromNumber((recovery - 35) >> 1), "0x", "0x"];
+    var signingData = values.slice(0,6).concat(extraData);
+    var signingDataHex = RLP.encode(signingData);
 
-    console.log('v: '+ txParams.v)
-    console.log('r: '+ txParams.r)
-    console.log('s: '+ txParams.s)
+    var msgHash = Hash.keccak256(signingDataHex)
 
-    console.log(_web3Provider.eth.accounts.recover(msgHash, txParams.v, txParams.r, txParams.s, true))
-    console.log(_web3Provider.eth.accounts.recoverTransaction('0x' + rawTx.toString('hex')))
+    return {rawTx: rawTx, msgHash: msgHash};
 
-    // console.log(msgHash, txParams.v, txParams.r, txParams.s)
-
-    // return {rawTx: rawTx, msgHash: msgHash};
-    return
-
-
-  },
-
-  generateRawTxAndMsgHash2: async function(_txHash, _privK, _web3Provider) {
-    var txParams = {};
-    var tx = await _web3Provider.eth.getTransaction(_txHash);
-    txParams.nonce = await _web3Provider.utils.toHex(tx['nonce']);
-    txParams.gasPrice = await _web3Provider.utils.toHex(tx['gasPrice']);
-    txParams.gasLimit = await _web3Provider.utils.toHex(tx['gas']);
-    txParams.to = await tx['to'];
-    txParams.value = await _web3Provider.utils.toHex(tx['value']);
-    // txParams.value = _web3Provider.utils.toHex(0x0)
-    txParams.data = await tx['input'];
-    var tx = new EthereumTx(txParams)
-    tx.sign(new Buffer.from(_privK, 'hex'));
-    const rawTx = tx.serialize();
-
-    //Form msgHash
-    var decoded = RLP.decode('0x' + rawTx.toString('hex'));
-    var v = '0x' + decoded[6].toString('hex');
-    var r = '0x' + decoded[7].toString('hex');
-    var s = '0x' +  decoded[8].toString('hex');
-    var txArrParams = []
-    for (var i = 0; i < 6; i ++) {
-      txArrParams.push('0x' + decoded[i].toString('hex'));
-    }
-    var msgHash = _web3Provider.utils.sha3('0x' + RLP.encode(txArrParams).toString('hex'));
-
-    console.log('v: '+ v)
-    console.log('r: '+ r)
-    console.log('s: '+ s)
-
-    console.log(_web3Provider.eth.accounts.recover(msgHash, v, r, s, true))
-
-    return ;
   }
 
 }
