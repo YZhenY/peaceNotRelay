@@ -151,9 +151,9 @@ module.exports = {
     txParams.value = await _web3Provider.utils.toHex(tx['value']);
     // txParams.value = _web3Provider.utils.toHex(0x0)
     txParams.data = await tx['input'];
-    txParams.v = await tx['v'].toString('hex');
-    txParams.r = await tx['r'].toString('hex');
-    txParams.s = await tx['s'].toString('hex');
+    txParams.v = await tx['v']//.toString('hex');
+    txParams.r = await tx['r']//.toString('hex');
+    txParams.s = await tx['s']//.toString('hex');
 
     var tx = new EthereumTx(txParams)
     const rawTx = tx.serialize();
@@ -165,15 +165,54 @@ module.exports = {
       txArrParams.push('0x' + decoded[i].toString('hex'));
     }
     var msgHash = _web3Provider.utils.sha3('0x' + RLP.encode(txArrParams).toString('hex'));
+
+    console.log('v: '+ txParams.v)
+    console.log('r: '+ txParams.r)
+    console.log('s: '+ txParams.s)
+
     console.log(_web3Provider.eth.accounts.recover(msgHash, txParams.v, txParams.r, txParams.s, true))
     console.log(_web3Provider.eth.accounts.recoverTransaction('0x' + rawTx.toString('hex')))
 
-    console.log(msgHash, txParams.v, txParams.r, txParams.s)
+    // console.log(msgHash, txParams.v, txParams.r, txParams.s)
 
     // return {rawTx: rawTx, msgHash: msgHash};
     return
 
 
+  },
+
+  generateRawTxAndMsgHash2: async function(_txHash, _privK, _web3Provider) {
+    var txParams = {};
+    var tx = await _web3Provider.eth.getTransaction(_txHash);
+    txParams.nonce = await _web3Provider.utils.toHex(tx['nonce']);
+    txParams.gasPrice = await _web3Provider.utils.toHex(tx['gasPrice']);
+    txParams.gasLimit = await _web3Provider.utils.toHex(tx['gas']);
+    txParams.to = await tx['to'];
+    txParams.value = await _web3Provider.utils.toHex(tx['value']);
+    // txParams.value = _web3Provider.utils.toHex(0x0)
+    txParams.data = await tx['input'];
+    var tx = new EthereumTx(txParams)
+    tx.sign(new Buffer.from(_privK, 'hex'));
+    const rawTx = tx.serialize();
+
+    //Form msgHash
+    var decoded = RLP.decode('0x' + rawTx.toString('hex'));
+    var v = '0x' + decoded[6].toString('hex');
+    var r = '0x' + decoded[7].toString('hex');
+    var s = '0x' +  decoded[8].toString('hex');
+    var txArrParams = []
+    for (var i = 0; i < 6; i ++) {
+      txArrParams.push('0x' + decoded[i].toString('hex'));
+    }
+    var msgHash = _web3Provider.utils.sha3('0x' + RLP.encode(txArrParams).toString('hex'));
+
+    console.log('v: '+ v)
+    console.log('r: '+ r)
+    console.log('s: '+ s)
+
+    console.log(_web3Provider.eth.accounts.recover(msgHash, v, r, s, true))
+
+    return ;
   }
 
 }
