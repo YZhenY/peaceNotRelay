@@ -8,11 +8,11 @@ Building off Loi Luu's BTC - ETH relay-less bridge described in "[Bringing Bitco
 
 The **Peace Bridge** is best illustrated through example. Consider, without loss of generality, a transfer in the ETC → ETH direction:
 
-[](https://www.notion.so/46f863a9a3074be494e6b6c6424e7dc3#3b341231363d4421bc6c78924a0fed4e)
+![](https://cdn-images-1.medium.com/max/1200/1*iv60priMWXBtE2Jbkfk1EQ.png)
 
 *Staking, minting, and depositing on the Peace Bridge.* Alice mints TETC-A on the foreign Ethereum chain and deposits an equivalent amount of real ETC on her home Ethereum Classic chain.
 
-# Staking, Minting, and Depositing
+## Staking, Minting, and Depositing
 
 The **peaceBridge** is initiated by a **Custodian** who sets up `DepositContract` on the home chain (here, Ethereum Classic) and `TokenContract` on the foreign chain (here, Ethereum).
 
@@ -29,7 +29,7 @@ Each user of the bridge mints on `TokenContract` simultaneously or prior to depo
 
 # Transferring, Co-signing, and Chain of Custody
 
-[](https://www.notion.so/46f863a9a3074be494e6b6c6424e7dc3#3cc8b1b082814770972431137334ce5d)
+![](https://cdn-images-1.medium.com/max/1200/1*G0JkbxZXvSsDIlFlLDet8w.png)
 
 1. **Alice** puts in a request to `TokenContract` to transfer her `TETC-A` token to **Bob**, with `declaredNonce` = 1. If her transfer is approved, the `transferNonce` of `TETC-A` will be updated from 0 to 1.  A token's `transferNonce` begins at 0 at time of minting, and increases by +1 with each approved transfer, thus establishing chronology in the chain of custody. 
 2. **Custodian** approves **Alice**'s transfer request, thus co-signing the transfer of `TETC-A` at `transferNonce` = 1. 
@@ -37,7 +37,8 @@ Each user of the bridge mints on `TokenContract` simultaneously or prior to depo
 
 In the time before **Custodian** approves **Alice**'s transfer request, **Alice** is free to revert the transaction, should she change her mind about transferring her `TETC-A` to **Bob**.
 
-# Withdrawing and Challenging
+## Withdrawing and Challenging
+![](https://cdn-images-1.medium.com/max/1200/1*7pv0kc40H87kPTLmSb1pqQ.png)
 
 A **Withdrawer** can use `TETC-A` to `withdraw()` from `DepositContract` , i.e. withdraw **Alice**'s original ETC deposit. She does this by submitting the following information to `DepositContract`:
 
@@ -51,11 +52,11 @@ If the withdrawal request is signed by the **Custodian** and the penultimate own
 
 We can reason about the possible fraudulent withdrawals and their corresponding challenge responses by considering the chronology of the withdrawal's `declaredNonce`:
 
-[Fraudulent withdraw & challenge response](https://www.notion.so/82dac047d0074f8099f95cf84909e81f)
+![Fraudulent withdraw & challenge response](https://cdn-images-1.medium.com/max/1200/1*kAmiqy5NM0JSxcglNFt82A.png)
 
 To initiate a challenge, a **Challenger** is required to stake a value equivalent to 20% of **Withdrawer**'s stake, on top of covering the gas costs borne by the **Withdrawer** in responding to the challenge. This prevents griefing attacks and trigger-happy challenges that slow down the bridge.
 
-# Penalising Custodian's double-sign
+## Penalising Custodian's double-sign
 
 At any point, the existence of more than one **Custodian**-signed transaction at the same nonce and for the same token can be submitted to `DepositContract` to prove the **Custodian**'s illegal double-sign. The punishment is as such:
 
