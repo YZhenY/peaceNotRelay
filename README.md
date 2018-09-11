@@ -27,7 +27,7 @@ Each user of the bridge mints on `TokenContract` simultaneously or prior to depo
 
 2b. **Alice** deposits `X` ETC in `DepositContract` (on the ETC chain) claiming her mint. 
 
-# Transferring, Co-signing, and Chain of Custody
+## Transferring, Co-signing, and Chain of Custody
 
 ![](https://cdn-images-1.medium.com/max/1200/1*G0JkbxZXvSsDIlFlLDet8w.png)
 
