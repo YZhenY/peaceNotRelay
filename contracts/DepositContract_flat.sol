@@ -2,32 +2,6 @@ pragma solidity ^0.4.24;
 // produced by the Solididy File Flattener (c) David Appleton 2018
 // contact : dave@akomba.com
 // released under Apache 2.0 licence
-library SafeMath {
-  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
-    uint256 c = a * b;
-    assert(a == 0 || c / a == b);
-    return c;
-  }
-
-  function div(uint256 a, uint256 b) internal pure returns (uint256) {
-    // assert(b > 0); // Solidity automatically throws when dividing by 0
-    uint256 c = a / b;
-    // assert(a == b * c + a % b); // There is no case in which this doesn't hold
-    return c;
-  }
-
-  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-    assert(b <= a);
-    return a - b;
-  }
-
-  function add(uint256 a, uint256 b) internal pure returns (uint256) {
-    uint256 c = a + b;
-    assert(c >= a);
-    return c;
-  }
-}
-
 contract Ownable {
   address public owner;
 
@@ -515,7 +489,7 @@ library BytesLib {
             // Update the free-memory pointer by padding our last write location
             // to 32 bytes: add 31 bytes to the end of tempBytes to move to the
             // next 32 byte block, then round down to the nearest multiple of
-            // 32. If the sum of the length of the two arrays is zero then add
+            // 32. If the sum of the length of the two arrays is zero then add 
             // one before rounding down to leave a blank 32 bytes (the length block with 0).
             mstore(0x40, and(
               add(add(end, iszero(add(length, mload(_preBytes)))), 31),
@@ -645,8 +619,8 @@ library BytesLib {
                 let mask := sub(exp(0x100, submod), 1)
 
                 sstore(sc, add(sload(sc), and(mload(mc), mask)))
-
-                for {
+                
+                for { 
                     sc := add(sc, 1)
                     mc := add(mc, 0x20)
                 } lt(mc, end) {
@@ -850,6 +824,32 @@ library BytesLib {
         return success;
     }
 }
+library SafeMath {
+  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+    uint256 c = a * b;
+    assert(a == 0 || c / a == b);
+    return c;
+  }
+
+  function div(uint256 a, uint256 b) internal pure returns (uint256) {
+    // assert(b > 0); // Solidity automatically throws when dividing by 0
+    uint256 c = a / b;
+    // assert(a == b * c + a % b); // There is no case in which this doesn't hold
+    return c;
+  }
+
+  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+    assert(b <= a);
+    return a - b;
+  }
+  
+  function add(uint256 a, uint256 b) internal pure returns (uint256) {
+    uint256 c = a + b;
+    assert(c >= a);
+    return c;
+  }
+}
+
 contract DepositContract {
   using SafeMath for uint256;
   using RLP for RLP.RLPItem;
@@ -1012,7 +1012,7 @@ contract DepositContract {
                                      uint8(withdrawTx[6].toUint()), //v
                                      withdrawTx[7].toBytes32(), //r
                                      withdrawTx[8].toBytes32()), //s
-            "WithdrawalTx not signed by lastTx receipient");
+                                     "WithdrawalTx not signed by lastTx receipient");
 
     //require that a challenge period is not underway
     require(challengeTime[_tokenId] == 0);
@@ -1420,3 +1420,4 @@ contract DepositContract {
   }
 
 }
+
