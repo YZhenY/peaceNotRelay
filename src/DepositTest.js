@@ -20,6 +20,11 @@ var privateKey3 = '0xe850b670f1ed2225708c2700c085d4d' +
 var publicAddress3 = '0x8CCd089c3208C9D6cd171dddEEbBa6bA185Ab5A9';
 
 //------------------------------------------------------------------------------
+//Specify TokenContract parameters
+var tokenContractAddr = '0x43F2649C9D3DC9d733B3A753e02a870f284477A7';
+var tokenContractNetwork = 'kovan'; //'rinkeby', 'ropsten', 'kovan', 'homestead'
+
+//------------------------------------------------------------------------------
 //Require dependencies
 var ethers = require('ethers');
 var utils = require('ethers').utils;
@@ -50,10 +55,7 @@ const bytecode = output.contracts['DepositContract_flat.sol:DepositContract'].
                  bytecode;
 const abi = JSON.parse(output.contracts['DepositContract_flat.sol:DepositContract'].
                        interface);
-//------------------------------------------------------------------------------
-//Specify TokenContract parameters
-var tokenContractAddr = '0xf5964C65C0BcA82a652Ba61D6De8f0c31B88C1bF';
-var tokenContractNetwork = 'kovan'; //'rinkeby', 'ropsten', 'kovan', 'homestead'
+
 //------------------------------------------------------------------------------
 //Write tests
 async function testFunctions(_contractInstance, _contractAddr){

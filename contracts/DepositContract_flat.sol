@@ -489,7 +489,7 @@ library BytesLib {
             // Update the free-memory pointer by padding our last write location
             // to 32 bytes: add 31 bytes to the end of tempBytes to move to the
             // next 32 byte block, then round down to the nearest multiple of
-            // 32. If the sum of the length of the two arrays is zero then add 
+            // 32. If the sum of the length of the two arrays is zero then add
             // one before rounding down to leave a blank 32 bytes (the length block with 0).
             mstore(0x40, and(
               add(add(end, iszero(add(length, mload(_preBytes)))), 31),
@@ -619,8 +619,8 @@ library BytesLib {
                 let mask := sub(exp(0x100, submod), 1)
 
                 sstore(sc, add(sload(sc), and(mload(mc), mask)))
-                
-                for { 
+
+                for {
                     sc := add(sc, 1)
                     mc := add(mc, 0x20)
                 } lt(mc, end) {
@@ -842,7 +842,7 @@ library SafeMath {
     assert(b <= a);
     return a - b;
   }
-  
+
   function add(uint256 a, uint256 b) internal pure returns (uint256) {
     uint256 c = a + b;
     assert(c >= a);
@@ -916,6 +916,10 @@ contract DepositContract {
   event Withdrawal(address indexed withdrawer,
                    uint256 indexed tokenId,
                    uint256 stakedAmount);
+  event CheckTransferTxAndCustodianTx(bytes32 msgHash,
+                                      uint8  v,
+                                      bytes32  r,
+                                      bytes32  s);
 
   bytes4 mintSignature = 0x94bf804d;
   bytes4 withdrawSignature = 0x2e1a7d4d;
@@ -1006,7 +1010,7 @@ contract DepositContract {
 
     checkTransferTxAndCustodianTx(lastTx, custodianTx, _txMsgHashes[2]);
 
-    address lastCustody = parseData(lastTx[5].toData(), 2).toAddress(12);
+    /* address lastCustody = parseData(lastTx[5].toData(), 2).toAddress(12);
     require(withdrawTx[3].toAddress() == tokenContract);
     require(lastCustody == ecrecover(_txMsgHashes[0], //hash of withdrawTx
                                      uint8(withdrawTx[6].toUint()), //v
@@ -1021,7 +1025,7 @@ contract DepositContract {
     challengeEndNonce[_tokenId] = _declaredNonce;
     challengeAddressClaim[_tokenId] = lastCustody;
     challengeRecipient[_tokenId] = _to;
-    challengeStake[_tokenId] = msg.value;
+    challengeStake[_tokenId] = msg.value; */
     emit Withdrawal(_to, _tokenId, msg.value);
   }
 
@@ -1258,18 +1262,23 @@ contract DepositContract {
             transferFromSignature, "_transferTx is not transferFrom function");
     require(bytesToBytes4(parseData(_custodianTx[5].toData(), 0), 0) ==
             custodianApproveSignature, "_custodianTx is not custodianApproval");
+    emit CheckTransferTxAndCustodianTx(_custodianTxMsgHash,
+                                       uint8(_custodianTx[6].toUint()),
+                                       _custodianTx[7].toBytes32(),
+                                       _custodianTx[8].toBytes32());
     require(custodianForeign == ecrecover(_custodianTxMsgHash,
                                           uint8(_custodianTx[6].toUint()),
                                           _custodianTx[7].toBytes32(),
                                           _custodianTx[8].toBytes32()),
             "_custodianTx should be signed by custodian");
+
     //TODO: which is more efficient, checking parameters or hash?
-    require(parseData(_transferTx[5].toData(),3).
+    /* require(parseData(_transferTx[5].toData(),3).
             equal(parseData(_custodianTx[5].toData(),1)),
             "token_ids do not match");
     require(parseData(_transferTx[5].toData(),4).
             equal(parseData(_custodianTx[5].toData(),2)),
-            "nonces do not match");
+            "nonces do not match"); */
   }
 
   /*
@@ -1420,4 +1429,3 @@ contract DepositContract {
   }
 
 }
-

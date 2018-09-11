@@ -109,6 +109,7 @@ module.exports = {
   },
 
   formBundleLengthsHashes: function(rawTxArr) {
+    console.log("rawTxArr: ", rawTxArr);
     var bundleArr = [];
     var txLengths = [];
     var txMsgHashes = [];
@@ -195,15 +196,7 @@ module.exports = {
     var txRaw = new EthereumTx(txParams)
     const rawTx = txRaw.serialize();
 
-    // //Form msgHash
     var values = RLP.decode('0x' + rawTx.toString('hex'));
-    var signature = Account.encodeSignature(values.slice(6,9));
-    var recovery = Bytes.toNumber(values[6]);
-    var extraData = recovery < 35 ? [] : [Bytes.fromNumber((recovery - 35) >> 1), "0x", "0x"];
-    var signingData = values.slice(0,6).concat(extraData);
-    var signingDataHex = RLP.encode(signingData);
-
-    var msgHash = Hash.keccak256(signingDataHex)
 
     var v = values[6]
     if (v.substr(v.length-1) == 7) {
@@ -215,13 +208,37 @@ module.exports = {
     var r = values[7]
     var s = values[8]
 
+    var txParams2 = {};
+    txParams2.nonce = values[0];
+    txParams2.gasPrice = values[1];
+    txParams2.gasLimit = values[2];
+    txParams2.to = values[3];
+    txParams2.value = values[4];
+    // txParams.value = _web3Provider.utils.toHex(0x0)
+    txParams2.data = values[5];
+    txParams2.v = values[6];
+    txParams2.r = values[7];
+    txParams2.s = values[8];
+
+    var txRaw2 = new EthereumTx(txParams2)
+    const rawTx2 = txRaw2.serialize();
+
+    //Form msgHash
+    var signature = Account.encodeSignature(values.slice(6,9));
+    var recovery = Bytes.toNumber(values[6]);
+    var extraData = recovery < 35 ? [] : [Bytes.fromNumber((recovery - 35) >> 1), "0x", "0x"];
+    var signingData = values.slice(0,6).concat(extraData);
+    var signingDataHex = RLP.encode(signingData);
+
+    var msgHash = Hash.keccak256(signingDataHex)
+
     console.log('v: ', v)
     console.log('r: ', r)
     console.log('s: ', s)
 
     console.log(_web3Provider.eth.accounts.recover(msgHash, v, r, s, true))
 
-    return {rawTx: rawTx, msgHash: msgHash};
+    return {rawTx: rawTx2, msgHash: msgHash};
 
   }
 
