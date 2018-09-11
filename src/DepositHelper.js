@@ -50,7 +50,6 @@ module.exports = {
   instantiateContract: async function(_addr, _abi, _wallet){
     var contractInstance = await new ethers.Contract(_addr, _abi, _wallet);
     var depositContract = new Promise(resolve => {resolve(contractInstance);});
-    await console.log("DepositContract instantiated");
     return depositContract;
   },
 
@@ -146,6 +145,39 @@ module.exports = {
     return bytes32Bundle;
   },
 
+  formBundleLengthsHashes: function(rawTxArr) {
+    var bundleArr = [];
+    var txLengths = [];
+    var txMsgHashes = [];
+    rawTxArr.forEach((value, i) => {
+      bundleArr[i] = value.rawTx.toString('hex');
+      txLengths[i] = value.rawTx.toString('hex').length + 2;
+      txMsgHashes[i] = value.msgHash;
+    })
+    var bytes32Bundle = module.exports.txsToBytes32BundleArr(bundleArr);
+    return {bytes32Bundle: bytes32Bundle, txLengths: txLengths, txMsgHashes: txMsgHashes};
+  },
+
+  txsToBytes32BundleArr: function (rawTxStringArr) {
+    var bytes32Bundle = [];
+    rawTxStringArr.forEach(value => {
+      var tempBundle = module.exports.toBytes32BundleArr(value);
+      tempBundle.forEach(value => bytes32Bundle.push(value));
+    })
+    return bytes32Bundle;
+  },
+
+  toBytes32BundleArr: function (rawBundle) {
+    var bytes32Bundle = [];
+    for (var i = 0; i < rawBundle.length; i ++) {
+      bytes32Bundle[Math.floor(i / 64)] = (bytes32Bundle[Math.floor(i / 64)]) ? bytes32Bundle[Math.floor(i / 64)] + rawBundle[i] : rawBundle[i] ;
+    }
+    bytes32Bundle.forEach((value, index) => {
+      bytes32Bundle[index] = '0x' + bytes32Bundle[index];
+    })
+    return bytes32Bundle;
+  },
+
   generateRawTxAndMsgHash: async function(_txHash, _web3Provider) {
     var txParams = {};
     var tx = await _web3Provider.eth.getTransaction(_txHash);
@@ -172,6 +204,22 @@ module.exports = {
     var signingDataHex = RLP.encode(signingData);
 
     var msgHash = Hash.keccak256(signingDataHex)
+
+    var v = values[6]
+    if (v.substr(v.length-1) == 7) {
+      v = '0x1b'
+    }
+    if (v.substr(v.length-1) == 8) {
+      v = '0x1c'
+    }
+    var r = values[7]
+    var s = values[8]
+
+    console.log('v: ', v)
+    console.log('r: ', r)
+    console.log('s: ', s)
+
+    console.log(_web3Provider.eth.accounts.recover(msgHash, v, r, s, true))
 
     return {rawTx: rawTx, msgHash: msgHash};
 

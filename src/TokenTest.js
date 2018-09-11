@@ -97,12 +97,12 @@ async function testFunctions(_contractInstance, _contractInstance2){
 
 async function deployContractAndTest(_testFunctions){
   var txHash = await tokenHelper.deployContract(bytecode, abi, publicAddress, wallet);
-  // setTimeout(async function() {
-  //   var contractAddr = await tokenHelper.getAddr(txHash, provider);
-  //   var tokenContract = await tokenHelper.instantiateContract(contractAddr, abi, wallet);
-  //   var tokenContract2 = await tokenHelper.instantiateContract(contractAddr, abi, wallet2);
-  //   _testFunctions(tokenContract, tokenContract2)
-  // }, blockTimeDelay);
+  setTimeout(async function() {
+    var contractAddr = await tokenHelper.getAddr(txHash, provider);
+    // var tokenContract = await tokenHelper.instantiateContract(contractAddr, abi, wallet);
+    // var tokenContract2 = await tokenHelper.instantiateContract(contractAddr, abi, wallet2);
+    // _testFunctions(tokenContract, tokenContract2)
+  }, blockTimeDelay);
 }
 
 //Deploy tests

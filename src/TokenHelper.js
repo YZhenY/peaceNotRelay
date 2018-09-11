@@ -41,7 +41,6 @@ module.exports = {
   instantiateContract: async function(_addr, _abi, _wallet){
     var contractInstance = await new ethers.Contract(_addr, _abi, _wallet);
     var tokenContract = new Promise(resolve => {resolve(contractInstance);});
-    await console.log("TokenContract instantiated");
     return tokenContract;
   },
 
@@ -49,8 +48,8 @@ module.exports = {
     var transactionReceipt = await _provider.getTransactionReceipt(_mintTxHash);
     var tokenIdHex = await transactionReceipt['logs'][0]['topics'][3]
     var tokenIdDec = utils.bigNumberify(tokenIdHex).toString()
-    console.log('tokenIdHex: '+tokenIdHex);
-    console.log('tokenIdDec: '+tokenIdDec);
+    console.log('tokenIdHex: ',tokenIdHex);
+    console.log('tokenIdDec: ',tokenIdDec);
     return tokenIdHex;
   },
 

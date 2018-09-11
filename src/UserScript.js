@@ -28,8 +28,8 @@ var homePrivateKey = '0x2b847e2e99d7600ab0fbae23643a6a8'+
 var homePublicAddr = '0x9677044a39550cEbB01fa79bEC04Cf54E162d0C3';
 var homeBlockTimeDelay = 55000;
 
-var tokenContractAddr = '0x2f5CB8ad4701Cca7557ac30414215a99101F5193';
-var depositContractAddr = '0xF572f27B262c2Dc0fCd4E516Ada5e0c023B22421';
+var tokenContractAddr = '0xC51501e67829506633f9615Fd6C9Bdf88e0b4900';
+var depositContractAddr = '0xA6ab0f48d9949dEDA5474E19561E3BeB557680fA';
 
 //------------------------------------------------------------------------------
 //Require dependencies
@@ -139,26 +139,14 @@ async function userTest(_custTokenContractInstance,
                                                                           web3ForeignProvider)
     var rawWithdrawal = await depositHelper.generateRawTxAndMsgHash(withdrawalTxHash,
                                                                     web3ForeignProvider)
-    var bytes32Bundle = [];
+    var withdrawArgs = await depositHelper.formBundleLengthsHashes([rawWithdrawal, rawTransferFrom, rawCustodianApprove]);
 
-    [rawWithdrawal.rawTx.toString('hex'),
-     rawTransferFrom.rawTx.toString('hex'),
-     rawCustodianApprove.rawTx.toString('hex')].forEach((value) => {
-      var tempBundle = depositHelper.toBytes32BundleArr(value);
-      tempBundle.forEach(value => bytes32Bundle.push(value));
-    })
-    var txLengths = [rawWithdrawal.rawTx.toString('hex').length + 2,
-                     rawTransferFrom.rawTx.toString('hex').length + 2,
-                     rawCustodianApprove.rawTx.toString('hex').length + 2 ];
-    var txMsgHashes = [rawWithdrawal.msgHash,
-                       rawTransferFrom.msgHash,
-                       rawCustodianApprove.msgHash];
     result = await depositHelper.withdrawCall(206250*10000000000,
                                               foreignPublicAddr2,
                                               tokenId,
-                                              bytes32Bundle,
-                                              txLengths,
-                                              txMsgHashes,
+                                              withdrawArgs.bytes32Bundle,
+                                              withdrawArgs.txLengths,
+                                              withdrawArgs.txMsgHashes,
                                               1, _depositContractInstance);
   }, foreignBlockTimeDelay*5 + homeBlockTimeDelay)
 }
@@ -184,7 +172,7 @@ async function instantiateAndTest(){
   await userTest(custTokenContract, tokenContract, tokenContract2, depositContract)
 }
 
-// instantiateAndTest()
+instantiateAndTest()
 
 transferTxHash = '0x5b4d15a45ff70292c135cbc3fe8c627de04bf8f1394a7955c1770dc0c9bc8555'
 custodianApproveTxHash = '0xed8775b9f0f6e8530de6b035c6a8e7aef7025e1d96386b2f400664a7d7279184'
@@ -193,26 +181,15 @@ withdrawalTxHash = '0xfa10ead8c0fa65d6d31dabbc385f46f3ac07b018dfd366e5c6c31171e3
 async function withdrawTest(){
   var rawTransferFrom = await depositHelper.generateRawTxAndMsgHash(transferTxHash,
                                                                     web3ForeignProvider)
+  console.log(rawTransferFrom)
   var rawCustodianApprove = await depositHelper.generateRawTxAndMsgHash(custodianApproveTxHash,
                                                                         web3ForeignProvider)
+  console.log(rawCustodianApprove)
   var rawWithdrawal = await depositHelper.generateRawTxAndMsgHash(withdrawalTxHash,
                                                                   web3ForeignProvider)
-  var bytes32Bundle = [];
+  console.log(rawWithdrawal)
+  var withdrawArgs = await depositHelper.formBundleLengthsHashes([rawWithdrawal, rawTransferFrom, rawCustodianApprove]);
+  console.log(withdrawArgs)
 
-  [rawWithdrawal.rawTx.toString('hex'),
-   rawTransferFrom.rawTx.toString('hex'),
-   rawCustodianApprove.rawTx.toString('hex')].forEach((value) => {
-    var tempBundle = depositHelper.toBytes32BundleArr(value);
-    tempBundle.forEach(value => bytes32Bundle.push(value));
-  })
-  console.log(bytes32Bundle)
-  var txLengths = [rawWithdrawal.rawTx.toString('hex').length + 2,
-                   rawTransferFrom.rawTx.toString('hex').length + 2,
-                   rawCustodianApprove.rawTx.toString('hex').length + 2 ];
-  console.log(txLengths)
-  var txMsgHashes = [rawWithdrawal.msgHash,
-                     rawTransferFrom.msgHash,
-                     rawCustodianApprove.msgHash];
-  console.log(txMsgHashes)
 }
-withdrawTest()
+// withdrawTest()
