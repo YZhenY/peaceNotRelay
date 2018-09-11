@@ -1,8 +1,8 @@
 # peaceBridge
 
-*Authors: Ben, Zhen, Ying Tong ([Akomba Labs](http://akomba.com/)).
+*Authors: Ben, Zhen, Ying Tong ([Akomba Labs](http://akomba.com/)).*
 
-We thank Dave Appleton (Akomba Labs), Anthony Lusardi (ETC Cooperative), and Loi Luu and Desmond (Kyber Network) for helpful discussions.*
+*We thank Dave Appleton (Akomba Labs), Anthony Lusardi (ETC Cooperative), and Loi Luu and Desmond (Kyber Network) for helpful discussions.*
 
 Building off Loi Luu's BTC - ETH relay-less bridge described in "[Bringing Bitcoin to Ethereum](https://blog.kyber.network/bringing-bitcoin-to-ethereum-7bf29db88b9a)",  **Peace Bridge** is an ETC - ETH bridge that uses co-signed chains of custody to verify transactions across the two chains. By introducing a challenge game and imposing staking requirements, our design addresses the high gas cost issues and employs a trustless **Custodian**. 
 
