@@ -3,6 +3,9 @@
 This script simulates a user interacting with TokenContract and DepositContract
 */
 
+var tokenContractAddr = '0x43F2649C9D3DC9d733B3A753e02a870f284477A7';
+var depositContractAddr = '0xbE4bFd9d92168a89A784Bb9b0F58c46D80c513d0';
+
 //------------------------------------------------------------------------------
 //Set parameters
 var infuraAPI = '9744d40b99e34a57850802d4c6433ab8';
@@ -27,9 +30,6 @@ var homePrivateKey = '0x2b847e2e99d7600ab0fbae23643a6a8'+
                      '1d009aaf0573e887b41079b614f61e450';
 var homePublicAddr = '0x9677044a39550cEbB01fa79bEC04Cf54E162d0C3';
 var homeBlockTimeDelay = 55000;
-
-var tokenContractAddr = '0xC51501e67829506633f9615Fd6C9Bdf88e0b4900';
-var depositContractAddr = '0xA6ab0f48d9949dEDA5474E19561E3BeB557680fA';
 
 //------------------------------------------------------------------------------
 //Require dependencies
@@ -151,8 +151,6 @@ async function userTest(_custTokenContractInstance,
   }, foreignBlockTimeDelay*5 + homeBlockTimeDelay)
 }
 
-//3. transfer on TokenContract
-
 //------------------------------------------------------------------------------
 //Run tests
 
@@ -181,15 +179,15 @@ withdrawalTxHash = '0xfa10ead8c0fa65d6d31dabbc385f46f3ac07b018dfd366e5c6c31171e3
 async function withdrawTest(){
   var rawTransferFrom = await depositHelper.generateRawTxAndMsgHash(transferTxHash,
                                                                     web3ForeignProvider)
-  console.log(rawTransferFrom)
+  // console.log(rawTransferFrom)
   var rawCustodianApprove = await depositHelper.generateRawTxAndMsgHash(custodianApproveTxHash,
                                                                         web3ForeignProvider)
-  console.log(rawCustodianApprove)
+  // console.log(rawCustodianApprove)
   var rawWithdrawal = await depositHelper.generateRawTxAndMsgHash(withdrawalTxHash,
                                                                   web3ForeignProvider)
-  console.log(rawWithdrawal)
+  // console.log(rawWithdrawal)
   var withdrawArgs = await depositHelper.formBundleLengthsHashes([rawWithdrawal, rawTransferFrom, rawCustodianApprove]);
-  console.log(withdrawArgs)
+  console.log("rawTxArr: ",[rawWithdrawal, rawTransferFrom, rawCustodianApprove])
 
 }
 // withdrawTest()
