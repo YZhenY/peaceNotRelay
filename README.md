@@ -61,3 +61,9 @@ To initiate a challenge, a **Challenger** is required to stake a value equivalen
 At any point, the existence of more than one **Custodian**-signed transaction at the same nonce and for the same token can be submitted to `DepositContract` to prove the **Custodian**'s illegal double-sign. The punishment is as such:
 
 For a token, say `TETC-A`, with corresponding deposit `X`, we slash `TETC-A`'s deposit as well as `X`-equivalent ETC from the **Custodian**'s stake. Here, the **Custodian**'s penalty increases as a linear function of discovered double-signing instances, thus disincentivising him from double-signing.
+
+## Tests
+To run truffle tests:
+npm i
+ganache-cli -p 7545 -s=something
+truffle test
