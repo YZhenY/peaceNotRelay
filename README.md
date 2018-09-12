@@ -64,6 +64,8 @@ For a token, say `TETC-A`, with corresponding deposit `X`, we slash `TETC-A`'s d
 
 ## Tests
 To run truffle tests:
-npm i
-ganache-cli -p 7545 -s=something
-truffle test
+`npm i`
+
+`ganache-cli -p 7545 -s=something`
+
+`truffle test`
