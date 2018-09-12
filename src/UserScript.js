@@ -3,8 +3,8 @@
 This script simulates a user interacting with TokenContract and DepositContract
 */
 
-var tokenContractAddr = '0x43F2649C9D3DC9d733B3A753e02a870f284477A7';
-var depositContractAddr = '0xbE4bFd9d92168a89A784Bb9b0F58c46D80c513d0';
+var tokenContractAddr = '0x366021610bF0D5EbfdC9041a7f8b152aa76E6D98';
+var depositContractAddr = '0xcBB5AeF36f6cde3e046c64EB2149BFFB59b8EFFf';
 
 //------------------------------------------------------------------------------
 //Set parameters
@@ -29,7 +29,12 @@ var homeCustPublicAddr = '0xC33Bdb8051D6d2002c0D80A1Dd23A1c9d9FC26E4';
 var homePrivateKey = '0x2b847e2e99d7600ab0fbae23643a6a8'+
                      '1d009aaf0573e887b41079b614f61e450';
 var homePublicAddr = '0x9677044a39550cEbB01fa79bEC04Cf54E162d0C3';
+var homePrivateKey2 = '0x546a0806a2d0240d50797f7f7b0120a'+
+                         '6af0d6e8bfa5b4620365f5e8af9eb6fe7';
+var homePublicAddr2 = '0x942BbcCde96bEc073e1DCfc50bc661c21a674d63';
 var homeBlockTimeDelay = 55000;
+var gasPerChallenge = 206250;
+var gasPrice = 10000000000;
 
 //------------------------------------------------------------------------------
 //Require dependencies
@@ -141,8 +146,8 @@ async function userTest(_custTokenContractInstance,
                                                                     web3ForeignProvider)
     var withdrawArgs = await depositHelper.formBundleLengthsHashes([rawWithdrawal, rawTransferFrom, rawCustodianApprove]);
 
-    result = await depositHelper.withdrawCall(206250*10000000000,
-                                              foreignPublicAddr2,
+    result = await depositHelper.withdrawCall(gasPerChallenge*gasPrice,
+                                              homePublicAddr2,
                                               tokenId,
                                               withdrawArgs.bytes32Bundle,
                                               withdrawArgs.txLengths,

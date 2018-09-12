@@ -2,6 +2,32 @@ pragma solidity ^0.4.24;
 // produced by the Solididy File Flattener (c) David Appleton 2018
 // contact : dave@akomba.com
 // released under Apache 2.0 licence
+library SafeMath {
+  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+    uint256 c = a * b;
+    assert(a == 0 || c / a == b);
+    return c;
+  }
+
+  function div(uint256 a, uint256 b) internal pure returns (uint256) {
+    // assert(b > 0); // Solidity automatically throws when dividing by 0
+    uint256 c = a / b;
+    // assert(a == b * c + a % b); // There is no case in which this doesn't hold
+    return c;
+  }
+
+  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+    assert(b <= a);
+    return a - b;
+  }
+  
+  function add(uint256 a, uint256 b) internal pure returns (uint256) {
+    uint256 c = a + b;
+    assert(c >= a);
+    return c;
+  }
+}
+
 contract Ownable {
   address public owner;
 
@@ -824,32 +850,6 @@ library BytesLib {
         return success;
     }
 }
-library SafeMath {
-  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
-    uint256 c = a * b;
-    assert(a == 0 || c / a == b);
-    return c;
-  }
-
-  function div(uint256 a, uint256 b) internal pure returns (uint256) {
-    // assert(b > 0); // Solidity automatically throws when dividing by 0
-    uint256 c = a / b;
-    // assert(a == b * c + a % b); // There is no case in which this doesn't hold
-    return c;
-  }
-
-  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-    assert(b <= a);
-    return a - b;
-  }
-  
-  function add(uint256 a, uint256 b) internal pure returns (uint256) {
-    uint256 c = a + b;
-    assert(c >= a);
-    return c;
-  }
-}
-
 contract DepositContract {
   using SafeMath for uint256;
   using RLP for RLP.RLPItem;
@@ -1014,6 +1014,9 @@ contract DepositContract {
                                      withdrawTx[8].toBytes32()), //s
                                      "WithdrawalTx not signed by lastTx receipient");
 
+    //checks nonce                   
+    require(parseData(lastTx[5].toData(),4).toUint(0) + 1 == _declaredNonce,
+        "nonces do not match");
     //require that a challenge period is not underway
     require(challengeTime[_tokenId] == 0);
     //start challenge period

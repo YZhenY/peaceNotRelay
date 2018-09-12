@@ -3,6 +3,10 @@
 This script automates deployment of TokenContract and includes some test
 functions interacting with the contract
 */
+//------------------------------------------------------------------------------
+//Specify TokenContract parameters
+var tokenContractAddr = '0x366021610bF0D5EbfdC9041a7f8b152aa76E6D98';
+var tokenContractNetwork = 'kovan'; //'rinkeby', 'ropsten', 'kovan', 'homestead'
 
 //------------------------------------------------------------------------------
 //Set parameters
@@ -50,10 +54,7 @@ const bytecode = output.contracts['DepositContract_flat.sol:DepositContract'].
                  bytecode;
 const abi = JSON.parse(output.contracts['DepositContract_flat.sol:DepositContract'].
                        interface);
-//------------------------------------------------------------------------------
-//Specify TokenContract parameters
-var tokenContractAddr = '0xf5964C65C0BcA82a652Ba61D6De8f0c31B88C1bF';
-var tokenContractNetwork = 'kovan'; //'rinkeby', 'ropsten', 'kovan', 'homestead'
+
 //------------------------------------------------------------------------------
 //Write tests
 async function testFunctions(_contractInstance, _contractAddr){
