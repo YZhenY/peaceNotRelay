@@ -1,4 +1,4 @@
-var DepositContract = artifacts.require("DepositContractMock.sol");
+var DepositContract = artifacts.require("DepositContract.sol");
 var testHelpers = require('../utils/testHelpers')(web3);
 var dummyTx = require('../utils/dummyRawTx.json');
 var web3Utils = require('web3').utils;
@@ -63,7 +63,7 @@ v: '0x1c',
 r: '0xd0ec4edab9f88619d9c48cd64e45a3da1a4d7e13a20db69033a234e68a3e64cd',
 s: '0x56e492a2834e706d462d37db5ca85363c44775387e6a139781101e6c57431bd7' }
 
-var dummyTokenId = new BN('0xd9f48f06cfd7a657aec67d94e17e2e921df7ef2fa4d29ff2c0ec6bb3271a28dc');
+var dummyTokenId = '0xd9f48f06cfd7a657aec67d94e17e2e921df7ef2fa4d29ff2c0ec6bb3271a28dc';
 
 var tokenContract = "0xc40b249a7cde0fca8fadcf4eba8dee933b460bd7";
 var dummyAddress = "0xc40b249a7cde0fca8fadcf4eba8dea933b460bd7";
@@ -74,41 +74,7 @@ contract('Deposit Contract', async (accounts) => {
     await depositContract.setTokenContract(tokenContract);
   })
 
-  // it("should parse() a transaction", async() => {
-  //   // console.log("HEX STRING", dummyTx.rawTxHex);
-  //   var actualDummyParams = Wallet.parseTransaction(dummyTx.rawTxHex);
-  //   // console.log("PARAMS:", actualDummyParams);
-
-  //   var result = await depositContract.parse(dummyTx.rawTxHex, dummyTx.msgHash);
-  //   // console.log("RESULT: ", result);
-  //   var parsedTx = await depositContract.testTx();
-  //   // console.log('transaction:', parsedTx);
-  //   // console.log('account0: ', accounts[0]);
-
-  //   for (var i = 0; i < transactionFields.length; i ++) {
-  //     var parsedTxValue = parsedTx[i];
-  //     var actualDummyParam = actualDummyParams[transactionFields[i]];
-  //     var test = false;
-  //     if (parsedTxValue.toNumber !== undefined) {
-  //       parsedTxValue = new BN(parsedTxValue.toNumber());
-  //       if (actualDummyParam._bn === undefined || actualDummyParam._bn.toNumber === undefined) {
-  //         actualDummyParam = new BN (actualDummyParam);
-  //       } else {
-  //         actualDummyParam = actualDummyParam._bn;
-  //       }
-  //       test = parsedTxValue.eq(actualDummyParam);
-  //     } else {
-  //       test = parsedTxValue.toLowerCase() === actualDummyParam.toLowerCase();
-  //     }
-  //     // console.log(test, `for ${transactionFields[i]}: ${parsedTxValue} should be ${actualDummyParam}`);
-  //     assert(test , `for ${transactionFields[i]}: ${parsedTxValue} should be ${actualDummyParam}`);
-  //   }
-  // })
-
   it("should  deposit()", async () => {
-    var result = await depositContract.deposit(dummyTokenId, dummyAddress, 10);
-    console.log(result.receipt.logs[0].args);
+    var result = await depositContract.deposit(dummyTokenId, dummyAddress);
   })
-
-
 })
