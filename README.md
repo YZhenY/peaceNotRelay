@@ -1,92 +1,69 @@
-#NOT UPDATED REFER TO
+# peaceBridge
 
-https://www.notion.so/akombalabs/peace-relay-revamped-46f863a9a3074be494e6b6c6424e7dc3
+*Authors: Ben, Zhen, Ying Tong ([Akomba Labs](http://akomba.com/)).*
 
-# peaceNotRelay
+*We thank Dave Appleton (Akomba Labs), Anthony Lusardi (ETC Cooperative), and Loi Luu and Desmond (Kyber Network) for helpful discussions.*
 
-This is a bridge establishing interoperability between Ethereum and Ethereum Classic in a trustless, low-cost way. Instead of relaying block headers from one chain to the other, it uses a trustless Custodian who verifies transactions across the two chains.  The bridge architecture consists of five main components, which are simply symmetrically replicated to get a two-way bridge.
+Building off Loi Luu's BTC - ETH relay-less bridge described in "[Bringing Bitcoin to Ethereum](https://blog.kyber.network/bringing-bitcoin-to-ethereum-7bf29db88b9a)",  **Peace Bridge** is an ETC - ETH bridge that uses co-signed chains of custody to verify transactions across the two chains. By introducing a challenge game and imposing staking requirements, our design addresses the high gas cost issues and employs a trustless **Custodian**. 
 
-1. `DepositContract`. This is a smart contract deployed on the home chain by the `Custodian`. This contract serves the following purposes:
-    - locking in deposits in home currency from users who wish to get equivalent tokens on the foreign chain;
-    - locking in the `Custodian`'s stake in home currency, and slashing it when the `Custodian` is proven to have misbehaved; and
-    - allowing withdraws of home currency to anyone who burned equivalent tokens on the foreign chain.
-2. `TokenContract`. This is a smart contract deployed on the foreign chain by the `Custodian`. This contract serves the following purposes:
-    - minting equivalent tokens on the foreign chain to match deposits on the home chain; and
-    - burning equivalent tokens on the foreign chain to allow for withdraws on the home chain.
-3. `Custodian`. This is a trustless signatory of transactions who communicates messages between the two chains. Only messages signed by the `Custodian` can call the `withdraw` function in `DepositContract` and the `mint` function in `TokenContract`. The Custodian must stake deposits on both chains, which will be slashed upon discovery of wrongdoing. The respective Contracts will be capped in proportion to the `Custodian`'s stake (see below).
-4. `Monitors`. `Monitors` watch transactions on both chains and report wrongdoing in return for a part of the `Custodian`'s deposit. They can either: 
-    - report over-staking or under-staking by the `Custodian` to the Contract on the appropriate chain; or 
-    - report false `mint` requests submitted to `TokenContract` (on the foreign chain) to `DepositContract`, which can itself verify the report against local transactions on the home chain.
-5. `User`. The `User` deposits currency on the home chain in exchange for equivalent tokens on the foreign chain. They can trade or transfer the tokens just like any other token on the foreign chain. Anyone who owns these tokens can burn them on the `TokenContract` to withdraw the original deposit on the home chain.
+The **Peace Bridge** is best illustrated through example. Consider, without loss of generality, a transfer in the ETC → ETH direction:
 
-## Description
-### Minting and burning
-![minting](images/minting.png)
-1. `Alice` deposits `X` ETC to `DepositContract` on Ethereum Classic, meant for her address `Y` on Ethereum. This transaction is processed in block `Z`.
-2. `Custodian` acknowledges `Alice`'s deposit by signing a message `m` with their signature `s`. `m` should contain information about `X`, `Y`, and `Z`.
-3. By submitting `m` to `TokenContract` on Ethereum, either `Alice` or the `Custodian` can mint `X` ETC-equivalent tokens to address `Y`.
+![](https://cdn-images-1.medium.com/max/1200/1*iv60priMWXBtE2Jbkfk1EQ.png)
 
-A symmetric process applies for burning newly minted tokens to retrieve the original deposit:
-![burning](images/burning.png)
+*Staking, minting, and depositing on the Peace Bridge.* Alice mints TETC-A on the foreign Ethereum chain and deposits an equivalent amount of real ETC on her home Ethereum Classic chain.
 
-This bridge typically has low gas costs per exchange, only requiring Alice to do a `deposit()` on one chain and the `Custodian` to submit a transaction running the `mint()` function on `TokenContract` (or, in the symmetric case, a `burn()` on one chain and `withdraw()` on the `DepositContract`).
+## Staking, Minting, and Depositing
 
-### Custodians and monitors
-A Custodian is rewarded for carrying out their duty in the form of transaction fees for every deposit. Custodians are incentivised to be honest using a system of monitors and staking. 
+The **peaceBridge** is initiated by a **Custodian** who sets up `DepositContract` on the home chain (here, Ethereum Classic) and `TokenContract` on the foreign chain (here, Ethereum).
 
-The Custodian is required to commit stakes of:
-- α on the home chain, and
-- 0.5α on the foreign chain.
+1a. **Custodian** stakes `α` ETC in `DepositContract` on the Ethereum Classic chain. `DepositContract` is where users will deposit home currency (here, ETC) in order to transact on the foreign chain. `α` will define `depositCap`, a limit on the amount of ETC that can be deposited in `DepositContract`. 
+1b. **Custodian** sets up `TokenContract` on the Ethereum chain, where users can mint ERC721 TETC tokens. Each separate mint will produce an ERC721 token with a unique `tokenId` that *cannot be split*.
 
-These stakes are used to generate appropriate caps for `DepositContract` and `TokenContract`. This ensures that the Custodian's home stake (α) is always greater than the amount they can mint on the foreign chain (0.5α).
+Once both `DepositContract` and `TokenContract` are set up, and `depositCap` is established, exchanges from ETC to TETC may begin.
 
-Monitors stand to gain at least 0.5α of the custodian's stake if they detect any wrongdoing. Anyone can be a monitor; in practice, a monitor can simply be an open-source script which reads transactions on both `DepositContract` and `TokenContract`. Monitors should report:
-- instances of under-staking on the home chain or over-staking on the foreign chain; and
-- instances where the Custodian submits a signed message to `TokenContract` containing a transaction not made in `DepositContract`.
+Each user of the bridge mints on `TokenContract` simultaneously or prior to depositing on `DepositContract`. This prevents malicious actors from stealing someone else's publicly published deposit and using it to mint tokens they didn't pay for. The process of minting and depositing is detailed as below:
 
-### Challenge mechanisms
-In the case where the Custodian fails to mint her promised tokens, Alice can issue a challenge by requesting that the Custodian send the signed message to her:
+2a. **Alice** wishes to exchange `X` ETC for TETC tokens to be used on the ETH main chain. To do so, she mints `X` `TETC-A` in `TokenContract` (on the ETH chain). Note that `TETC-A` is an ERC721 token that has a unique `tokenId` and cannot be split.
 
-![challenge](images/challenge.png)
+2b. **Alice** deposits `X` ETC in `DepositContract` (on the ETC chain) claiming her mint. 
 
-1. Alice deposits in the `DepositContract`
-2. Custodian lags in transmitting the `Mint transaction`. As such Alice gets fed up and issues a challenge to the `DepositContract`
-3. Timer starts on the `DepositContract`
-4. If custodian provides the required signed message to the deposit contract, Alice can `mint()` with that message. Else, the timer times out and Alice can withdraw her deposit with a small bounty from the custodian's stake.
+## Transferring, Co-signing, and Chain of Custody
 
-In the symmetric case where Alice burns her foreign tokens, but the Custodian refuses to sign the burn message, Alice can issue a challenge to `TokenContract` requesting that the Custodian send the signed message to her. If the Custodian fails to send the message, Alice simply withdraws an equivalent amount of from the Custodian's stake in `TokenContract`. Recall that since the `TokenContract` has a cap equivalent to the Custodian's foreign stake, Alice will always be able to recover an amount equivalent to her burnt tokens from the Custodian's stake.
+![](https://cdn-images-1.medium.com/max/1200/1*G0JkbxZXvSsDIlFlLDet8w.png)
 
-### Custodian incentive structures
-Below we describe two main vectors of attack as well as how the Custodian's incentive structure handles these vectors:
+1. **Alice** puts in a request to `TokenContract` to transfer her `TETC-A` token to **Bob**, with `declaredNonce` = 1. If her transfer is approved, the `transferNonce` of `TETC-A` will be updated from 0 to 1.  A token's `transferNonce` begins at 0 at time of minting, and increases by +1 with each approved transfer, thus establishing chronology in the chain of custody. 
+2. **Custodian** approves **Alice**'s transfer request, thus co-signing the transfer of `TETC-A` at `transferNonce` = 1. 
+3. Ownership of `TETC-A` is successfully transferred to Bob. `transferNonce` of `TETC-A` is incremented by 1, signifying that `TETC-A` has undergone one transfer.
 
-1. *Minting out of thin air*
-![thin-air-attack](images/thin-air-attack.png)
+In the time before **Custodian** approves **Alice**'s transfer request, **Alice** is free to revert the transaction, should she change her mind about transferring her `TETC-A` to **Bob**.
 
-After they're caught in the act, custodians can either:
+## Withdrawing and Challenging
+![](https://cdn-images-1.medium.com/max/1200/1*7pv0kc40H87kPTLmSb1pqQ.png)
 
-- Send an admission of wrongdoing to `TokenContract`, thus destroying their fraudulent tokens (which are worth ≤0.5α) and regaining 0.5α of their stake from `DepositContract`; or,
-- Choose to forfeit their remaining 0.5α stake in `DepositContract`, and retain their fraudulent tokens (which are worth ≤0.5α).
+A **Withdrawer** can use `TETC-A` to `withdraw()` from `DepositContract` , i.e. withdraw **Alice**'s original ETC deposit. She does this by submitting the following information to `DepositContract`:
 
-2. *Under-staking on the home chain and/or over-staking on the foreign chain*
+`uint256 _tokenId`, the unique tokenId of the `TETC-A` token she is trying to redeem
+`bytes32[] _rawTxBundle`,  a bundle containing information about `_withdrawalTx`, 
+                                                       `_lastTx`, `_custodianTx`
+`bytes32[] _txMsgHashes`, the hashes of the values in `_rawTxBundle`
+`uint256 _declaredNonce`, the number of transfers of `TETC-A`
 
-The custodian should never be able to under-stake on the home chain or over-stake on the foreign chain. Consider the attack where the custodian stakes <α on the home chain in `DepositContract`, and/or >0.5α on the foreign chain in `TokenContract`. Since the `MintingContract` cap is generated based on the foreign stake, the custodian could mint more tokens than can be slashed in their home stake. This means that, in the event of exposed wrongdoing, the custodian is incentivised to give up their home stake in favour of a larger reward of fake tokens on the foreign chain. 
+If the withdrawal request is signed by the **Custodian** and the penultimate owner of the token, `DepositContract` opens up a challenge period, during which anyone can submit a proof that the **Withdrawer** is making a fraudulent withdrawal. A successful **Challenger** is rewarded with the **Withdrawer**'s stake.
 
-To prevent this, the monitors should:
-- report home stakes that are too low to `TokenContract` (on the foreign chain), or
-- report foreign stakes that are too high to `DepositContract` (on the home chain).
+We can reason about the possible fraudulent withdrawals and their corresponding challenge responses by considering the chronology of the withdrawal's `declaredNonce`:
 
-These stakes would have been signed by the custodian, so would not be possible for the monitor to fake. Once under-staking or over-staking is detected, the custodian loses the stake in the contract on which the report is made.
+![Fraudulent withdraw & challenge response](https://cdn-images-1.medium.com/max/1200/1*kAmiqy5NM0JSxcglNFt82A.png)
 
-### Ending Considerations
-- Since the stakes are in ETC and ETH, their ratio would be dependent on the exchange rate. Hence, price volatility of this exchange rate would have to be taken into account when determining if home chain is under-staked / foreign chain is over-staked.
-- Requires a Custodian to have a sum of capital 3 times larger than the max deposit threshold of the bridge. The ratio of capital required can be dependent on how trust-less the custodian is required to be. The reasoning for the current ratio is:
-  - to allow for enough funds for refund of "stranded" participants on the foreign chain; and
-  - to ensure that the Custodian can never mint more fake tokens on the foreign chain than he stands to lose on the home chain ⇒ when caught in a fraudulent transaction, he is always incentivised to give up his foreign tokens and recover his larger home stake.
-- Assumes a financially rational custodian that has no external incentives to grief other stakeholders by crashing the system. Whilst the incentive structures are there such that the participants would face no (or perhaps little) financial loss - this would cause a great time-inconvenience to all stakeholders involved.
+To initiate a challenge, a **Challenger** is required to stake a value equivalent to 20% of **Withdrawer**'s stake, on top of covering the gas costs borne by the **Withdrawer** in responding to the challenge. This prevents griefing attacks and trigger-happy challenges that slow down the bridge.
 
-## Setup
+## Penalising Custodian's double-sign
 
-## Collaborators
-- Akomba Labs (https://akombalabs.com)
-- Kyber Network (https://kyber.network/)
-- Ethereum Foundation (https://ethereum.org/)
+At any point, the existence of more than one **Custodian**-signed transaction at the same nonce and for the same token can be submitted to `DepositContract` to prove the **Custodian**'s illegal double-sign. The punishment is as such:
+
+For a token, say `TETC-A`, with corresponding deposit `X`, we slash `TETC-A`'s deposit as well as `X`-equivalent ETC from the **Custodian**'s stake. Here, the **Custodian**'s penalty increases as a linear function of discovered double-signing instances, thus disincentivising him from double-signing.
+
+## Tests
+To run truffle tests:
+npm i
+ganache-cli -p 7545 -s=something
+truffle test

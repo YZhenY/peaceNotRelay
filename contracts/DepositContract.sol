@@ -169,6 +169,9 @@ contract DepositContract {
                                      withdrawTx[8].toBytes32()), //s
                                      "WithdrawalTx not signed by lastTx receipient");
 
+    //checks nonce                   
+    require(parseData(lastTx[5].toData(),4).toUint(0) + 1 == _declaredNonce,
+        "nonces do not match");
     //require that a challenge period is not underway
     require(challengeTime[_tokenId] == 0);
     //start challenge period

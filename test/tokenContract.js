@@ -48,7 +48,6 @@ contract('Token Contract Test', async (accounts) => {
   it("should mint()", async() => {
     var result = await tokenContract.mint(10000, accounts[1]);
     assert(result.logs[1].event === "Mint", "should emit event mint");
-    console.log(accounts[0],accounts[1],accounts[2])
   })
 
   it("should transferFrom() and custodianApprove()", async() => {
@@ -57,12 +56,10 @@ contract('Token Contract Test', async (accounts) => {
 
     var token =  result.logs[0].args._tokenId;
 
-    console.log("TOKEN", token);
     // result = await tokenContract.transferFrom(accounts[1], accounts[2], token, {from: accounts[1]});
     result = await tokenContract.transferFrom(accounts[1], accounts[2], token, 0, {from: accounts[1]});
     var transferFromTx = result.tx;
 
-    console.log(":-C",result.logs[0].args)
 
     assert(result.logs[0].args.tokenId.eq(token), `should token shoudl equal token, ${token} instead ${result.logs[0].args._tokenId}`);
     assert(result.logs[0].event === "TransferRequest", "should emit event TransferRequest");
@@ -75,8 +72,6 @@ contract('Token Contract Test', async (accounts) => {
     web3.eth.getTransaction = Promise.promisify(web3.eth.getTransaction);
     transferFromTx  = await web3.eth.getTransaction(transferFromTx);
     custodianApproveTx  = await web3.eth.getTransaction(custodianApproveTx);
-    console.log("TRANSFER", transferFromTx.value.toJSON(), transferFromTx.gasPrice.toJSON());
-    console.log("custodian: ", custodianApproveTx.value.toJSON(), custodianApproveTx.gasPrice.toJSON() );
 
   })
 
