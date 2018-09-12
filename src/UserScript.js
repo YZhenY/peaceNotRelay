@@ -3,6 +3,9 @@
 This script simulates a user interacting with TokenContract and DepositContract
 */
 
+var tokenContractAddr = '0x43F2649C9D3DC9d733B3A753e02a870f284477A7';
+var depositContractAddr = '0xbE4bFd9d92168a89A784Bb9b0F58c46D80c513d0';
+
 //------------------------------------------------------------------------------
 //Set parameters
 var infuraAPI = '9744d40b99e34a57850802d4c6433ab8';
@@ -27,9 +30,6 @@ var homePrivateKey = '0x2b847e2e99d7600ab0fbae23643a6a8'+
                      '1d009aaf0573e887b41079b614f61e450';
 var homePublicAddr = '0x9677044a39550cEbB01fa79bEC04Cf54E162d0C3';
 var homeBlockTimeDelay = 55000;
-
-var tokenContractAddr = '0x43F2649C9D3DC9d733B3A753e02a870f284477A7';
-var depositContractAddr = '0x0e34f07C16f3504F6E21688347F0Fda2D2c5D48A';
 
 //------------------------------------------------------------------------------
 //Require dependencies

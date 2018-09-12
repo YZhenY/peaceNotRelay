@@ -60,7 +60,7 @@ module.exports = {
     };
     var tx = await _wallet.sendTransaction(transaction);
     var txHash = await module.exports.getTxHash(tx);
-    await console.log('Sent ' + _etherString + ' to ' + _addr + ' at tx ' + txHash);
+    await console.log('Sent ' + _etherString + ' ETH to ' + _addr + ' at tx ' + txHash);
     return txHash;
   },
 
@@ -216,7 +216,7 @@ module.exports = {
     txParams2.value = values[4];
     // txParams.value = _web3Provider.utils.toHex(0x0)
     txParams2.data = values[5];
-    txParams2.v = values[6];
+    txParams2.v = v;
     txParams2.r = values[7];
     txParams2.s = values[8];
 
