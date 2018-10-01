@@ -1038,8 +1038,8 @@ contract DepositContract {
             "the challenge period has not started yet");
     require(challengeTime[_tokenId] < now,
             "the challenge period has not ended yet");
-    //challengeNonce represents the requirement for the next tx (thus the +1)
-    require(challengeNonce[_tokenId] == challengeEndNonce[_tokenId] + 1 ||
+    // challengeNonce represents the requirement for the next tx
+    require(challengeNonce[_tokenId] == challengeEndNonce[_tokenId] ||
                                         challengeNonce[_tokenId] == 0,
             "either a challenge has started, or the challenge response has not been proven to endNonce");
     challengeRecipient[_tokenId].send((tokenIdToAmount[_tokenId] ) +
@@ -1423,4 +1423,5 @@ contract DepositContract {
   }
 
 }
+
 
